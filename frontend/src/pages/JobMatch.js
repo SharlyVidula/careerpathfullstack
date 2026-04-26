@@ -3,15 +3,21 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import theme from "../theme";
 import BentoCard from "../components/BentoCard";
+import { useToast } from "../components/ToastContext";
+import Skeleton from "../components/Skeleton";
 
 export default function JobMatch() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [jd, setJd] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
   const handleScan = async () => {
-    if (!jd.trim()) return alert("Paste a Job Description first!");
+    if (!jd.trim()) {
+      addToast("Paste a Job Description first!", "warning");
+      return;
+    }
     const user = JSON.parse(localStorage.getItem("user"));
     
     setLoading(true);
@@ -23,8 +29,9 @@ export default function JobMatch() {
         jobDescription: jd
       });
       setResult(res.data.result);
+      addToast("Job Match scan complete!", "success");
     } catch (err) {
-      alert(err.response?.data?.message || "Scan failed.");
+      addToast(err.response?.data?.message || "Scan failed.", "error");
     } finally {
       setLoading(false);
     }
@@ -70,7 +77,12 @@ export default function JobMatch() {
         )}
 
         {loading && (
-            <div style={styles.pulse}>Running AI Comparison...</div>
+          <div style={{ textAlign: "center", marginTop: "20px" }}>
+            <Skeleton width="120px" height="120px" borderRadius="50%" style={{ margin: "0 auto 20px" }} />
+            <Skeleton width="100%" height="16px" style={{ marginBottom: "10px" }} />
+            <Skeleton width="80%" height="16px" style={{ marginBottom: "10px", marginLeft: "10%" }} />
+            <Skeleton width="90%" height="16px" style={{ marginLeft: "5%" }} />
+          </div>
         )}
 
         {result && (

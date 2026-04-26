@@ -1,6 +1,7 @@
 // frontend/src/components/CareerFormModern.js
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { useToast } from "./ToastContext";
 
 function TagInput({ value = [], placeholder = "type and press Enter", onChange }) {
   const [text, setText] = useState("");
@@ -58,6 +59,7 @@ function TagInput({ value = [], placeholder = "type and press Enter", onChange }
 }
 
 export default function CareerFormModern() {
+  const { addToast } = useToast();
   const [skills, setSkills] = useState([]); // array of {name}
   const [interests, setInterests] = useState([]); // array of strings
   const [recs, setRecs] = useState([]);
@@ -75,11 +77,11 @@ export default function CareerFormModern() {
       if (res.data && res.data.ok) {
         setRecs(res.data.recommendations || []);
       } else {
-        alert("Error: " + (res.data?.error || "unknown"));
+        addToast("Error: " + (res.data?.error || "unknown"), "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Server error — check console");
+      addToast("Server error — check console", "error");
     } finally { setLoading(false); }
   }
 
@@ -116,7 +118,7 @@ export default function CareerFormModern() {
             <div style={{marginTop:10, display:"flex", gap:8}}>
               <button onClick={async ()=>{
                 await axios.post("/api/users/save-recommendation", { userId: "anonymous", careerTitle: r.title, score: r.score });
-                alert("Saved!");
+                addToast("Saved!", "success");
               }} style={{padding:"8px 10px", borderRadius:8}}>Save</button>
               <a style={{padding:"8px 10px", borderRadius:8, background:"#f1f1f1", textDecoration:"none"}} href="#">{/* could link to career details */}View</a>
             </div>

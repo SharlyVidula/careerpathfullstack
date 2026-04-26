@@ -4,6 +4,7 @@ import apiClient from "../apiClient";
 import theme from "../theme";
 import { useToast } from "../components/ToastContext";
 import BentoCard from "../components/BentoCard";
+import Skeleton from "../components/Skeleton";
 
 export default function JDMatch() {
   const navigate = useNavigate();
@@ -120,6 +121,22 @@ export default function JDMatch() {
           {loading ? "Matching…" : "Run JD Match"}
         </button>
       </div>
+
+      {loading && !result && (
+        <>
+          <BentoCard colSpan={2} style={{ opacity: 0.5 }}>
+            <Skeleton width="160px" height="28px" style={{ marginBottom: "20px" }} />
+            <Skeleton width="120px" height="120px" style={{ margin: "0 auto 20px" }} borderRadius="50%" />
+            <Skeleton width="100%" height="80px" />
+          </BentoCard>
+          <BentoCard colSpan={2} style={{ opacity: 0.5 }}>
+            <Skeleton width="180px" height="28px" style={{ marginBottom: "20px" }} />
+            <Skeleton width="100%" height="40px" style={{ marginBottom: "10px" }} />
+            <Skeleton width="100%" height="40px" style={{ marginBottom: "10px" }} />
+            <Skeleton width="80%" height="40px" />
+          </BentoCard>
+        </>
+      )}
 
       {result && (
         <>

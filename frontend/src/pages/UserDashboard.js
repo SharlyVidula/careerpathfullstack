@@ -201,7 +201,7 @@ function UserDashboard() {
                       setAppliedJobs(newApplied);
                       localStorage.setItem("appliedJobs", JSON.stringify(newApplied));
                     } else {
-                      alert("Employer email not available.");
+                      addToast("Employer email not available.", "error");
                     }
                   }}
                 >

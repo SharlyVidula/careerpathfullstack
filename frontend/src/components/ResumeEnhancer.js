@@ -1,8 +1,10 @@
 // frontend/src/components/ResumeEnhancer.js
 import React, { useState } from "react";
 import apiClient from "../apiClient";
+import { useToast } from "./ToastContext";
 
 export default function ResumeEnhancer() {
+  const { addToast } = useToast();
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -10,7 +12,7 @@ export default function ResumeEnhancer() {
 
   const uploadResume = async () => {
     if (!file) {
-      alert("Please upload a resume file first.");
+      addToast("Please upload a resume file first.", "warning");
       return;
     }
 

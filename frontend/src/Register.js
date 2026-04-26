@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import apiClient from "./apiClient";
 import theme from "./theme";
+import { useToast } from "./components/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   // NEW: Added 'role' to state
   const [formData, setFormData] = useState({
     name: "",
@@ -23,13 +25,13 @@ function Register() {
       const res = await apiClient.post("/users/register", formData);
 
       if (res.data && res.data.message.includes("Registered")) {
-        alert("Registration successful! Please login.");
+        addToast("Registration successful! Please login.", "success");
         navigate("/login");
       } else {
-        alert(res.data.message || "Registration failed");
+        addToast(res.data.message || "Registration failed", "error");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Error registering user");
+      addToast(error.response?.data?.message || "Error registering user", "error");
     }
   };
 

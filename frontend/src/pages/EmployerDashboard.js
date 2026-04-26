@@ -2,12 +2,16 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import theme from "../theme";
 import BentoCard from "../components/BentoCard";
+import { useToast } from "../components/ToastContext";
+import Skeleton from "../components/Skeleton";
 
 export default function EmployerDashboard() {
+  const { addToast } = useToast();
   const [candidates, setCandidates] = useState([]);
   const [user, setUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [myJobs, setMyJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // 🆕 State for Job Form
   const [jobForm, setJobForm] = useState({ title: "", description: "", salary: "", location: "" });
@@ -24,6 +28,17 @@ export default function EmployerDashboard() {
     fetchCandidates();
   }, []);
 
+  const fetchCandidates = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/users/candidates");
+      setCandidates(res.data.candidates || []);
+    } catch (err) {
+      console.error("Error fetching candidates", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchMyJobs = async (employerId) => {
     try {
       const res = await axios.get(`http://localhost:5000/api/users/employer-jobs?employerId=${employerId}`);
@@ -33,42 +48,41 @@ export default function EmployerDashboard() {
     }
   };
 
-  const fetchCandidates = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/users/candidates");
-      setCandidates(res.data.candidates || []);
-    } catch (err) {
-      console.error("Error fetching candidates", err);
-    }
-  };
+  // Moved fetchCandidates to useEffect hook directly or define above useEffect
 
   const sendRequest = async (employeeId) => {
-    if (!user) return alert("Please login first");
+    if (!user) {
+      addToast("Please login first", "error");
+      return;
+    }
     try {
       await axios.post("http://localhost:5000/api/users/request-connection", {
         employerId: user.id,
         employeeId: employeeId
       });
-      alert("Request sent! Admin will review it shortly.");
+      addToast("Request sent! Admin will review it shortly.", "success");
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || "Could not send request"));
+      addToast("Error: " + (err.response?.data?.message || "Could not send request"), "error");
     }
   };
 
   // 🆕 Function to Post Job
   const handlePostJob = async (e) => {
     e.preventDefault();
-    if (!user) return alert("Please login first");
+    if (!user) {
+      addToast("Please login first", "error");
+      return;
+    }
 
     try {
       await axios.post("http://localhost:5000/api/users/post-job", {
         ...jobForm,
         employerId: user.id
       });
-      alert("✅ Job Posted! It is now pending Admin approval.");
+      addToast("✅ Job Posted! It is now pending Admin approval.", "success");
       setJobForm({ title: "", description: "", salary: "", location: "" }); // Clear form
     } catch (err) {
-      alert("Error posting job: " + err.message);
+      addToast("Error posting job: " + err.message, "error");
     }
   };
 
@@ -167,7 +181,22 @@ export default function EmployerDashboard() {
         </div>
 
         <div style={styles.grid}>
-          {candidates
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={styles.candidateCard}>
+                <div style={{ display: "flex", gap: "15px", alignItems: "center", marginBottom: "15px" }}>
+                  <Skeleton width="48px" height="48px" borderRadius="50%" />
+                  <div>
+                    <Skeleton width="120px" height="18px" style={{ marginBottom: "5px" }} />
+                    <Skeleton width="80px" height="14px" />
+                  </div>
+                </div>
+                <Skeleton width="100%" height="40px" style={{ marginBottom: "8px" }} />
+                <Skeleton width="90%" height="40px" />
+              </div>
+            ))
+          ) : (
+            candidates
             .filter((c) => {
               if (!searchTerm) return true;
               const role = c.seekingRole || "";
@@ -221,7 +250,8 @@ export default function EmployerDashboard() {
                   Request Connection
                 </button>
               </div>
-            ))}
+            ))
+          )}
         </div>
 
         {candidates.length > 0 && candidates.filter(c =>

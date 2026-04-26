@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import theme from "./theme";
+import { useToast } from "./components/ToastContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -36,9 +38,9 @@ export default function Login() {
 
     } catch (err) {
       if (err.response?.data?.unverified) {
-        alert("Your email is unverified! Please register again or contact an administrator to get your code.");
+        addToast("Your email is unverified! Please register again or contact an administrator to get your code.", "warning");
       } else {
-        alert(err.response?.data?.message || "Login failed");
+        addToast(err.response?.data?.message || "Login failed", "error");
       }
     } finally {
       setLoading(false);

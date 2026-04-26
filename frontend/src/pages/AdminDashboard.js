@@ -4,12 +4,16 @@ import axios from "axios";
 import theme from "../theme";
 import { sendNotification } from "../emailService"; // ✅ Keeps the Email Feature working
 import BentoCard from "../components/BentoCard";
+import { useToast } from "../components/ToastContext";
+import Skeleton from "../components/Skeleton";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [admin, setAdmin] = useState(null);
   const [requests, setRequests] = useState([]);
   const [pendingJobs, setPendingJobs] = useState([]); // 🆕 State for Jobs
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 1. Check Admin Login
@@ -20,15 +24,16 @@ export default function AdminDashboard() {
     }
     const parsed = JSON.parse(data);
     if (parsed.role !== "admin") {
-      alert("Access Denied: Admins only.");
+      addToast("Access Denied: Admins only.", "error");
       navigate("/dashboard");
       return;
     }
     setAdmin(parsed);
 
     // 2. Fetch Data
-    fetchPendingRequests();
-    fetchPendingJobs();
+    Promise.all([fetchPendingRequests(), fetchPendingJobs()]).finally(() => {
+      setLoading(false);
+    });
   }, [navigate]);
 
   // --- FETCHING DATA ---
@@ -68,14 +73,14 @@ export default function AdminDashboard() {
             req.employeeId.email, 
             req.employerId.name   
           );
-          alert(`✅ Request Approved & Email Sent to ${req.employeeId.email}`);
+          addToast(`✅ Request Approved & Email Sent to ${req.employeeId.email}`, "success");
       } else {
-          alert(`Request ${decision}d successfully!`);
+          addToast(`Request ${decision}d successfully!`, "success");
       }
 
       fetchPendingRequests(); // Refresh
     } catch (err) {
-      alert("Error updating request.");
+      addToast("Error updating request.", "error");
     }
   };
 
@@ -84,10 +89,10 @@ export default function AdminDashboard() {
     try {
         const status = decision === 'approve' ? 'approved' : 'rejected';
         await axios.put(`http://localhost:5000/api/users/admin/jobs/${jobId}`, { status });
-        alert(`Job Post ${status.toUpperCase()}!`);
+        addToast(`Job Post ${status.toUpperCase()}!`, "success");
         fetchPendingJobs(); // Refresh
     } catch (err) {
-        alert("Error updating job.");
+        addToast("Error updating job.", "error");
     }
   };
 
@@ -110,7 +115,24 @@ export default function AdminDashboard() {
            📢 Job Post Approvals ({pendingJobs.length})
         </h3>
 
-        {pendingJobs.length === 0 ? (
+        {loading ? (
+          <div style={styles.listContainer}>
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} style={styles.requestItem}>
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="60%" height="20px" style={{ marginBottom: "10px" }} />
+                  <Skeleton width="40%" height="16px" style={{ marginBottom: "10px" }} />
+                  <Skeleton width="100%" height="16px" style={{ marginBottom: "10px" }} />
+                  <Skeleton width="50%" height="14px" />
+                </div>
+                <div style={styles.btnGroup}>
+                  <Skeleton width="80px" height="36px" />
+                  <Skeleton width="80px" height="36px" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : pendingJobs.length === 0 ? (
           <p style={{color: theme.colors.textSecondary}}>No pending job posts.</p>
         ) : (
           <div style={styles.listContainer}>
@@ -156,7 +178,23 @@ export default function AdminDashboard() {
             🔗 Connection Approvals ({requests.length})
         </h3>
 
-        {requests.length === 0 ? (
+        {loading ? (
+          <div style={styles.listContainer}>
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} style={styles.requestItem}>
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="50%" height="18px" style={{ marginBottom: "8px" }} />
+                  <Skeleton width="50%" height="18px" style={{ marginBottom: "8px" }} />
+                  <Skeleton width="40%" height="14px" />
+                </div>
+                <div style={styles.btnGroup}>
+                  <Skeleton width="80px" height="36px" />
+                  <Skeleton width="80px" height="36px" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : requests.length === 0 ? (
           <p style={{color: theme.colors.textSecondary}}>No pending connection requests.</p>
         ) : (
           <div style={styles.listContainer}>
