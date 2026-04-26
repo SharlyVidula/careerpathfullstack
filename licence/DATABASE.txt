@@ -1,0 +1,58 @@
+database 
+
+
+
+3. The Database (The "Digital Filing Cabinet")
+How to describe it: "I used MongoDB (specifically MongoDB Atlas on the Cloud). It is a NoSQL database, which means it stores data in flexible, JSON-like documents instead of rigid rows and columns."
+
+The 2 Main Strategies you used (Explain these):
+
+Strategy A: The "Single-Collection" Design (For Users)
+The Concept: Instead of creating three messy tables—one for Admins, one for Employers, and one for Students—you used one efficient collection.
+
+How to explain it:
+
+"I designed the User database to be efficient. I keep Students, Employers, and Admins all in the same users collection.
+
+To tell them apart, I use a specific field called role.
+
+If the role is 'employer', the site gives them the recruitment dashboard.
+
+If the role is 'user', the site treats them as a candidate.
+
+This makes searching easier because I don't have to look through multiple tables to find a login account."
+
+Strategy B: The "Bridge" Collection (For Requests)
+The Concept: You created a separate collection called requests to link two people together. This is known as a Relational Link.
+
+How to explain it:
+
+"The requests collection acts as a bridge between an Employer and a Student. It doesn't store all the user details again (that would be wasteful).
+
+Instead, it stores just three things:
+
+The Employer's ID (Who sent it).
+
+The Student's ID (Who received it).
+
+The Status (Pending, Accepted, or Denied).
+
+When the frontend needs to show the name or email, the database uses these IDs to 'look up' the details from the User collection instantly."
+
+Viva Cheat Sheet: Database Questions
+Q: "Why did you use MongoDB instead of SQL (like MySQL)?"
+
+A: "Because my data structure might change. In a startup project like this, I might want to add a 'LinkedIn Profile' field to students later. MongoDB allows me to add new fields without crashing the whole database. It is flexible and works perfectly with JavaScript (Node.js)."
+
+Q: "What is a Schema?"
+
+A: "Even though MongoDB is flexible, I used Mongoose Schemas in my backend. This acts like a 'blueprint' or a set of rules. It ensures that a User must have an email and a password before saving. It prevents bad data from entering the system."
+
+Q: "How do you handle the relationship between users?"
+
+A: "I use References (ObjectId). In the Request document, I don't copy the user's name. I only save their ID. This way, if a user changes their name later, the Request stays valid because it points to the unique ID, not the text name."
+
+The "One-Line" Summary for the Examiner
+If they ask for a quick overview, say this:
+
+"I built a MERN stack application using MongoDB Atlas. I structured my database with a Role-Based User Collection for security and a Requests Collection to track the state of job applications efficiently."

@@ -1,0 +1,38 @@
+crud 
+
+
+
+3. The New CRUDs (Recruitment Feature)
+The specific operations you built today.
+
+You implemented a complete C.R.U.D. flow for the Job Connection feature:
+
+C - CREATE (Employer):
+
+Action: Employer clicks "Request Connection".
+
+Endpoint: POST /api/users/request-connection
+
+Logic: Creates a new document in the requests collection with status PENDING_ADMIN.
+
+R - READ (Everyone):
+
+Employer: Reads list of Candidates (GET /candidates).
+
+Admin: Reads list of requests waiting for approval (GET /admin/pending-requests).
+
+Student: Reads incoming job offers (GET /my-requests).
+
+U - UPDATE (Admin & Student):
+
+Action 1 (Admin): Updates status from PENDING_ADMIN → PENDING_EMPLOYEE.
+
+Action 2 (Student): Updates status from PENDING_EMPLOYEE → ACCEPTED.
+
+Endpoint: PUT /api/users/requests/:id
+
+D - DELETE (Soft Delete):
+
+Action: When an Admin or Student clicks "Deny/Decline".
+
+Logic: We don't actually delete the data (so we keep a record). Instead, we Update the status to DENIED. This effectively hides it from the active view.

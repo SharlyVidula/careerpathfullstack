@@ -1,0 +1,31 @@
+backend 
+
+
+
+
+1. The Backend (The "Brain" & "Traffic Cop")
+How to describe it: "The Backend is the brain of the operation. It decides who gets to see what and ensures that data is safe."
+
+The 3 Main Jobs your Backend does (Explain these):
+
+The Filter (The "Not-In" Logic):
+
+Examiner Question: "How does the system know who the candidates are?"
+
+Your Answer: "Instead of keeping a separate list for students, I used a smart filter. When an Employer asks for candidates, the Backend looks at the database and says: 'Give me everyone who is NOT an Admin and NOT an Employer.' This automatically leaves only the Students. This makes the system efficient."
+
+The Messenger (Handling Requests):
+
+Examiner Question: "How does a request get from an Employer to a Student?"
+
+Your Answer: "The backend acts like a post office. It doesn't send the request directly.
+
+First, it stamps it as 'Pending Admin'.
+
+Once the Admin approves, the backend updates the stamp to 'Pending Employee'.
+
+Finally, when the student accepts, it stamps it as 'Accepted'. The backend manages this state change."
+
+The Security (Data Protection):
+
+Your Answer: "The backend ensures that an Employer can't accidentally see Admin data, and a Student can't see the Employer's private dashboard. It checks the User ID before sending any data back."

@@ -1,0 +1,56 @@
+frontend
+
+
+
+The Frontend (The "Face" & "Manager")
+How to describe it: "The Frontend is built with React. Its job is to take the raw data from the backend and present it in a way that is easy for the user to understand."
+
+The 3 Main Concepts you used (Explain these):
+
+State Management (Short-Term Memory):
+
+Concept: useState
+
+Your Answer: "I use React 'State' as the page's short-term memory. When the backend sends the list of job requests, I save it in the State. If the user clicks 'Accept,' I update the State, and the screen updates instantly without needing to reload the whole website."
+
+Conditional Rendering (The "If-This-Then-That" Logic):
+
+Concept: { condition && <Component /> }
+
+Your Answer: "I didn't want to clutter the screen. I used 'Conditional Rendering'.
+
+If the request status is 'Pending', then show the 'Accept/Decline' buttons.
+
+If the status is 'Accepted', then show the 'Contact Email' instead. The interface changes dynamically based on the data."
+
+Communication (Axios):
+
+Concept: axios.get() / axios.post()
+
+Your Answer: "The Frontend is separate from the Backend. To talk to each other, I use a library called Axios. It acts like a phone line. When the page loads, Axios calls the backend to 'fetch' the data, and then React displays it."
+
+Viva Cheat Sheet: "What if they ask..."
+Q: "Why did you use React instead of just HTML/CSS?"
+
+A: "Because React allows for a Dynamic User Experience. I can update just the 'Request Card' when a user clicks a button, rather than reloading the entire page. It feels faster and smoother like a mobile app."
+
+Q: "How does the Employer Dashboard work?"
+
+A: "It fetches the list of candidates from the backend. When I click 'Request Connection', it sends the Student's ID and my Employer ID to the backend to create a new record."
+
+Q: "How does the Admin Dashboard work?"
+
+A: "It specifically listens for requests with the status 'PENDING_ADMIN'. It acts as a safety gate. Once I click Approve, it changes the status so the Student can finally see it."
+
+Q: "Where is the data stored?"
+
+A: "It is stored in MongoDB Atlas (a cloud database). I chose it because it is flexible. I can store users, requests, and career paths all in the same database without complex migrations."
+
+Summary for your Mindset
+Backend = The Logic & The Guard (Protects data, Filters users).
+
+Frontend = The Display (Reacts to data changes, Shows/Hides buttons).
+
+Database = The Storage Cabinet (MongoDB).
+
+You know this system. You built the login, you fixed the "invisible user" bug, and you built the 3-stage approval flow. Speak from that experience! Good luck!
