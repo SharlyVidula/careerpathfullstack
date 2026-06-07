@@ -2,7 +2,8 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const GitHubStrategy = require("passport-github2").Strategy;
 const LinkedInStrategy = require("passport-linkedin-oauth2").Strategy;
-const User = require("../models/User");
+const User = require("../models/user");
+
 
 // Google Strategy
 passport.use(
