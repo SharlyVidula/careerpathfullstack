@@ -7,6 +7,8 @@ const dotenv = require("dotenv");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+const session = require("express-session");
+const passport = require("./config/passport");
 
 dotenv.config();
 
@@ -21,6 +23,15 @@ app.use(
     origin: "*", // you can restrict this later
   })
 );
+
+// Session needed for passport OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'supersecret',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Rate limiting (basic)
 const limiter = rateLimit({
@@ -39,6 +50,9 @@ app.get("/api/health", (req, res) => {
 });
 
 /* ------------ ROUTES (wired correctly) ------------ */
+
+// auth: oauth routes
+app.use("/api/auth", require("./routes/authRoutes"));
 
 // users: register, login, saved, etc.
 app.use("/api/users", require("./routes/userRoutes"));

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import apiClient from "./apiClient";
+import apiClient, { BACKEND_URL } from "./apiClient";
 import theme from "./theme";
 import { useToast } from "./components/ToastContext";
+import { FaGoogle, FaGithub, FaLinkedin } from "react-icons/fa";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -83,6 +84,21 @@ export default function Login() {
           </button>
         </form>
 
+        <div style={styles.oauthContainer}>
+          <p style={styles.oauthText}>Or login with</p>
+          <div style={styles.oauthButtons}>
+            <a href={`${BACKEND_URL}/api/auth/google`} style={styles.oauthBtn}>
+              <FaGoogle style={styles.oauthIcon} /> Google
+            </a>
+            <a href={`${BACKEND_URL}/api/auth/github`} style={styles.oauthBtn}>
+              <FaGithub style={styles.oauthIcon} /> GitHub
+            </a>
+            <a href={`${BACKEND_URL}/api/auth/linkedin`} style={styles.oauthBtn}>
+              <FaLinkedin style={styles.oauthIcon} /> LinkedIn
+            </a>
+          </div>
+        </div>
+
         <p style={styles.footerText}>
           Don't have an account? <Link to="/register" style={styles.link}>Sign up</Link>
         </p>
@@ -157,5 +173,35 @@ const styles = {
     color: theme.colors.accent,
     textDecoration: "none",
     fontWeight: "600"
+  },
+  oauthContainer: {
+    marginTop: "20px",
+    paddingTop: "20px",
+    borderTop: `1px solid ${theme.colors.border}`
+  },
+  oauthText: {
+    color: theme.colors.textSecondary,
+    fontSize: "12px",
+    marginBottom: "15px"
+  },
+  oauthButtons: {
+    display: "flex",
+    gap: "10px",
+    justifyContent: "center"
+  },
+  oauthBtn: {
+    ...theme.button("outline"),
+    flex: 1,
+    padding: "8px",
+    fontSize: "13px",
+    textDecoration: "none",
+    textAlign: "center",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px"
+  },
+  oauthIcon: {
+    fontSize: "16px"
   }
 };

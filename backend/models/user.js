@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
+  password: { type: String }, // Optional for OAuth users
   role: { type: String, default: "user" },
   saved: [{ careerTitle: String, score: Number, date: Date }],
 
@@ -14,7 +14,13 @@ const userSchema = new mongoose.Schema({
   skills: [{ type: String }],         // Parsed main skills
   bioSnippet: { type: String },       // Very short bio or facts
   profilePic: { type: String },       // Extracted Base64 image
-  extractedName: { type: String }     // Extracted Name
+  extractedName: { type: String },    // Extracted Name
+
+  // ⭐ NEW OAUTH FIELDS ⭐
+  googleId: { type: String },
+  githubId: { type: String },
+  linkedinId: { type: String },
+  linkedinData: { type: Object } // Store all raw data retrieved from LinkedIn
 }, { timestamps: true });
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);

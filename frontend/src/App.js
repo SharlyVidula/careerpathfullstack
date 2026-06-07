@@ -12,6 +12,7 @@ import Login from "./Login";
 import JDMatch from "./pages/JDMatch";
 import GrowthTracker from "./pages/GrowthTracker";
 import ThemeToggle from "./components/ThemeToggle";
+import OAuthCallback from "./OAuthCallback";
 // Import Dashboards
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCareers from "./pages/AdminCareers";
@@ -100,6 +101,7 @@ function App() {
                 <Route path="/"          element={<Register />} />
                 <Route path="/register"  element={<Register />} />
                 <Route path="/login"     element={<Login />} />
+                <Route path="/oauth/callback" element={<OAuthCallback />} />
 
                 {/* Feature Routes */}
                 <Route path="/growth"    element={<GrowthTracker />} />
