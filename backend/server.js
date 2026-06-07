@@ -15,6 +15,10 @@ const passport = require("./config/passport");
 
 const app = express();
 
+// Trust reverse proxy (Render load balancer SSL termination)
+app.set("trust proxy", 1);
+
+
 // Security & parsing
 app.use(helmet());
 app.use(express.json());
