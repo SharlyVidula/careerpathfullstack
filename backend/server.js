@@ -1,16 +1,17 @@
 // backend/server.js
 console.log("✅ Using FIXED server.js");
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 const session = require("express-session");
 const passport = require("./config/passport");
 
-dotenv.config();
 
 const app = express();
 

@@ -76,47 +76,81 @@ passport.use(
 );
 
 // LinkedIn Strategy
-passport.use(
-  new LinkedInStrategy(
-    {
-      clientID: process.env.LINKEDIN_CLIENT_ID || "dummy",
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "dummy",
-      callbackURL: "/api/auth/linkedin/callback",
-      scope: ["r_emailaddress", "r_liteprofile"], // adjust scopes based on app permissions
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        let user = await User.findOne({ linkedinId: profile.id });
-        let email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
+const linkedinStrategy = new LinkedInStrategy(
+  {
+    clientID: process.env.LINKEDIN_CLIENT_ID || "dummy",
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "dummy",
+    callbackURL: "/api/auth/linkedin/callback",
+    scope: ["openid", "profile", "email"],
+    state: true,
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await User.findOne({ linkedinId: profile.id });
+      let email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
 
-        if (!user) {
-          user = await User.findOne({ email });
-          if (user) {
-            user.linkedinId = profile.id;
-            user.linkedinData = profile._json; // Store all raw data
-            await user.save();
-          } else {
-            user = new User({
-              name: profile.displayName,
-              email: email,
-              linkedinId: profile.id,
-              profilePic: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
-              linkedinData: profile._json, // Store all raw data from LinkedIn
-            });
-            await user.save();
-          }
+      if (!user) {
+        user = await User.findOne({ email });
+        if (user) {
+          user.linkedinId = profile.id;
+          user.linkedinData = profile._json; // Store all raw data
+          await user.save();
         } else {
-           // update linkedin data on every login
-           user.linkedinData = profile._json;
-           await user.save();
+          user = new User({
+            name: profile.displayName,
+            email: email,
+            linkedinId: profile.id,
+            profilePic: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
+            linkedinData: profile._json, // Store all raw data from LinkedIn
+          });
+          await user.save();
         }
-        return done(null, user);
-      } catch (err) {
-        return done(err, null);
+      } else {
+         // update linkedin data on every login
+         user.linkedinData = profile._json;
+         await user.save();
+      }
+      return done(null, user);
+    } catch (err) {
+      return done(err, null);
+    }
+  }
+);
+
+// Override userProfile to fetch from LinkedIn OpenID Connect UserInfo endpoint
+linkedinStrategy.userProfile = function(accessToken, done) {
+  this._oauth2.get(
+    "https://api.linkedin.com/v2/userinfo",
+    accessToken,
+    function(err, body, res) {
+      if (err) {
+        return done(new Error("Failed to fetch user profile: " + err.message));
+      }
+      try {
+        const json = JSON.parse(body);
+        const profile = {
+          provider: "linkedin",
+          id: json.sub,
+          displayName: json.name,
+          name: {
+            familyName: json.family_name,
+            givenName: json.given_name
+          },
+          emails: [{ value: json.email }],
+          photos: json.picture ? [{ value: json.picture }] : [],
+          _raw: body,
+          _json: json
+        };
+        done(null, profile);
+      } catch (e) {
+        done(e);
       }
     }
-  )
-);
+  );
+};
+
+passport.use(linkedinStrategy);
+
 
 // Serialize / Deserialize User
 passport.serializeUser((user, done) => {
