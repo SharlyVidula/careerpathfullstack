@@ -120,13 +120,21 @@ const linkedinStrategy = new LinkedInStrategy(
 
 // Override userProfile to fetch from LinkedIn OpenID Connect UserInfo endpoint
 linkedinStrategy.userProfile = function(accessToken, done) {
+  this._oauth2.setAccessTokenName("access_token");
+  this._oauth2._useAuthorizationHeaderForGET = true;
   this._oauth2.get(
+
+
+
+
     "https://api.linkedin.com/v2/userinfo",
     accessToken,
     function(err, body, res) {
       if (err) {
-        return done(new Error("Failed to fetch user profile: " + err.message));
+        console.error("❌ LinkedIn OIDC profile fetch error:", err);
+        return done(new Error("Failed to fetch user profile: " + (err.message || JSON.stringify(err) || err)));
       }
+
       try {
         const json = JSON.parse(body);
         const profile = {
