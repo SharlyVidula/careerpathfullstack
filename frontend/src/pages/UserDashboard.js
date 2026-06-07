@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../apiClient";
 import theme from "../theme";
 import CareerForm from "../CareerForm";
 import ResumeEnhancer from "../components/ResumeEnhancer";
 import { useToast } from "../components/ToastContext";
-import useTilt from "../hooks/useTilt";
 import BentoCard from "../components/BentoCard";
 
 
@@ -37,15 +36,15 @@ function UserDashboard() {
   const fetchDashboardData = async (userId) => {
     try {
       // Fetch Requests
-      const reqRes = await axios.get(`http://localhost:5000/api/users/my-requests?userId=${userId}`);
+      const reqRes = await apiClient.get(`/users/my-requests?userId=${userId}`);
       setRequests(reqRes.data.requests || []);
 
       // Fetch Saved Careers
-      const savedRes = await axios.get(`http://localhost:5000/api/users/saved?userId=${userId}`);
+      const savedRes = await apiClient.get(`/users/saved?userId=${userId}`);
       setSaved(savedRes.data.saved || []);
 
       // 🆕 Fetch Approved Jobs
-      const jobsRes = await axios.get("http://localhost:5000/api/users/jobs");
+      const jobsRes = await apiClient.get("/users/jobs");
       setJobs(jobsRes.data.jobs || []);
 
     } catch (e) {
@@ -63,7 +62,7 @@ function UserDashboard() {
     formData.append("userId", user.id);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/users/upload-resume", formData, {
+      const res = await apiClient.post("/users/upload-resume", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       const updatedUser = { ...user, seekingRole: res.data.role, atsScore: res.data.atsScore };
@@ -83,7 +82,7 @@ function UserDashboard() {
   const handleDecision = async (requestId, decision) => {
     try {
       const status = decision === 'accept' ? 'ACCEPTED' : 'DENIED';
-      await axios.put(`http://localhost:5000/api/users/requests/${requestId}`, { status });
+      await apiClient.put(`/users/requests/${requestId}`, { status });
       fetchDashboardData(user.id);
       addToast(`Request ${decision}ed!`, "success");
     } catch (e) {
@@ -195,7 +194,7 @@ function UserDashboard() {
                     if (job.employerId?.email) {
                       window.location.href = `mailto:${job.employerId.email}?subject=Application for ${encodeURIComponent(job.title)}`;
 
-                      axios.put(`http://localhost:5000/api/users/jobs/${job._id}/click`).catch(err => console.error(err));
+                      apiClient.put(`/users/jobs/${job._id}/click`).catch(err => console.error(err));
 
                       const newApplied = [...appliedJobs, job._id];
                       setAppliedJobs(newApplied);

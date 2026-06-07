@@ -11,6 +11,13 @@ function Navbar() {
     navigate("/login");
   };
 
+  const getDashboardPath = () => {
+    if (!user) return "/login";
+    if (user.role === "admin") return "/admin";
+    if (user.role === "employer") return "/employer-dashboard";
+    return "/user-dashboard";
+  };
+
   return (
     <nav style={styles.nav} className="card-animate">
       <div style={styles.brandRow}>
@@ -33,7 +40,12 @@ function Navbar() {
           </>
         ) : (
           <>
-            <Link to="/dashboard" style={styles.link} className="button-hover">
+            {user.role === "admin" && (
+              <Link to="/admin/careers" style={styles.linkGhost} className="button-hover">
+                Manage Careers
+              </Link>
+            )}
+            <Link to={getDashboardPath()} style={styles.link} className="button-hover">
               Dashboard
             </Link>
             <button onClick={handleLogout} style={styles.logoutBtn} className="button-hover">

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import theme from "../theme";
 
 export default function ThemeToggle() {
     const [isLight, setIsLight] = useState(false);
@@ -30,7 +29,7 @@ export default function ThemeToggle() {
             style={{
                 position: "fixed",
                 bottom: "30px",
-                right: "30px",
+                right: "105px",
                 height: "56px",
                 width: "56px",
                 borderRadius: "50%",

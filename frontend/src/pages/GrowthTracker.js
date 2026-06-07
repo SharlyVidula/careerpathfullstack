@@ -4,11 +4,9 @@ import apiClient from "../apiClient";
 import theme from "../theme";
 import Skeleton from "../components/Skeleton";
 import BentoCard from "../components/BentoCard";
+import { useToast } from "../components/ToastContext";
 
-import { Doughnut } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DEFAULT = {
   progress: {
@@ -39,6 +37,7 @@ const formatDateTime = (d) => {
 
 export default function GrowthTracker() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [user, setUser] = useState(null);
 
   const [state, setState] = useState(DEFAULT);
@@ -122,63 +121,7 @@ export default function GrowthTracker() {
     return p.academic + p.industry + p.skills + p.certifications + p.networking;
   }, [state.progress]);
 
-  // Chart data (COLORED DONUT)
-  const chartData = useMemo(() => {
-    const p = state.progress;
 
-    return {
-      labels: ["Academic", "Industry", "Skills", "Certifications", "Networking"],
-      datasets: [
-        {
-          label: "Progress",
-          data: [p.academic, p.industry, p.skills, p.certifications, p.networking],
-
-          backgroundColor: [
-            "rgba(139, 92, 246, 0.85)", // Academic
-            "rgba(56, 189, 248, 0.85)", // Industry
-            "rgba(34, 197, 94, 0.85)",  // Skills
-            "rgba(245, 158, 11, 0.85)", // Certifications
-            "rgba(236, 72, 153, 0.85)", // Networking
-          ],
-
-          borderColor: [
-            "rgba(139, 92, 246, 1)",
-            "rgba(56, 189, 248, 1)",
-            "rgba(34, 197, 94, 1)",
-            "rgba(245, 158, 11, 1)",
-            "rgba(236, 72, 153, 1)",
-          ],
-
-          borderWidth: 2,
-          hoverOffset: 10,
-        },
-      ],
-    };
-  }, [state.progress]);
-
-  // Chart options
-  const chartOptions = useMemo(() => {
-    return {
-      responsive: true,
-      cutout: "70%",
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            color: theme.colors.textSecondary,
-            usePointStyle: true,
-            pointStyle: "rectRounded",
-            padding: 16,
-          },
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => `${ctx.label}: ${ctx.parsed}%`,
-          },
-        },
-      },
-    };
-  }, []);
 
   // Submit daily log
   const submitLog = async () => {
@@ -205,6 +148,7 @@ export default function GrowthTracker() {
           explanation: res.data.explanation,
         });
         setLogText("");
+        addToast("[ SUCCESS ] SYSTEM INTEGRITY UPDATED. PROGRESS SYNCED.", "success");
 
         // ✅ refresh recent activity + streak after update
         await refreshHistoryAndStreak();
@@ -281,25 +225,176 @@ export default function GrowthTracker() {
       {!!error && <div style={{ ...styles.errorBox, gridColumn: "1 / -1" }}>{error}</div>}
 
       {/* LEFT: PROGRESS */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} style={{ justifyContent: "flex-start", gap: "20px" }}>
         <h2 style={styles.h2}>Progress</h2>
 
-        <div style={styles.chartWrap}>
-          <Doughnut data={chartData} options={chartOptions} />
-          <div style={styles.chartCenter}>
-            <div style={styles.centerBig}>{Math.round(total / 5)}%</div>
-            <div style={styles.centerSmall}>overall avg</div>
+        <div style={styles.hudContainer}>
+          <div style={styles.radarWrapper}>
+            <svg width="300" height="300" viewBox="0 0 300 300" style={styles.radarSvg}>
+              <defs>
+                <filter id="radar-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              
+              {/* Telemetry background crosshairs */}
+              <line x1="150" y1="10" x2="150" y2="290" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" strokeDasharray="3 5" />
+              <line x1="10" y1="150" x2="290" y2="150" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" strokeDasharray="3 5" />
+              
+              {/* Concentric Progress Tracks (Background & Active Rings) */}
+              
+              {/* Track 5: Networking (Pink) - Radius 130 */}
+              <circle cx="150" cy="150" r="130" fill="none" stroke="rgba(236, 72, 153, 0.06)" strokeWidth="6" />
+              <circle 
+                cx="150" 
+                cy="150" 
+                r="130" 
+                fill="none" 
+                stroke="rgba(236, 72, 153, 0.9)" 
+                strokeWidth="6" 
+                strokeLinecap="round"
+                strokeDasharray="816" 
+                strokeDashoffset={816 - (816 * (state.progress.networking || 0)) / 100} 
+                filter="url(#radar-glow)"
+                style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
+              />
+              
+              {/* Track 4: Certifications (Orange) - Radius 108 */}
+              <circle cx="150" cy="150" r="108" fill="none" stroke="rgba(245, 158, 11, 0.06)" strokeWidth="6" />
+              <circle 
+                cx="150" 
+                cy="150" 
+                r="108" 
+                fill="none" 
+                stroke="rgba(245, 158, 11, 0.9)" 
+                strokeWidth="6" 
+                strokeLinecap="round"
+                strokeDasharray="678" 
+                strokeDashoffset={678 - (678 * (state.progress.certifications || 0)) / 100} 
+                filter="url(#radar-glow)"
+                style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
+              />
+              
+              {/* Track 3: Skills (Green) - Radius 86 */}
+              <circle cx="150" cy="150" r="86" fill="none" stroke="rgba(34, 197, 94, 0.06)" strokeWidth="6" />
+              <circle 
+                cx="150" 
+                cy="150" 
+                r="86" 
+                fill="none" 
+                stroke="rgba(34, 197, 94, 0.9)" 
+                strokeWidth="6" 
+                strokeLinecap="round"
+                strokeDasharray="540" 
+                strokeDashoffset={540 - (540 * (state.progress.skills || 0)) / 100} 
+                filter="url(#radar-glow)"
+                style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
+              />
+              
+              {/* Track 2: Industry (Blue) - Radius 64 */}
+              <circle cx="150" cy="150" r="64" fill="none" stroke="rgba(56, 189, 248, 0.06)" strokeWidth="6" />
+              <circle 
+                cx="150" 
+                cy="150" 
+                r="64" 
+                fill="none" 
+                stroke="rgba(56, 189, 248, 0.9)" 
+                strokeWidth="6" 
+                strokeLinecap="round"
+                strokeDasharray="402" 
+                strokeDashoffset={402 - (402 * (state.progress.industry || 0)) / 100} 
+                filter="url(#radar-glow)"
+                style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
+              />
+              
+              {/* Track 1: Academic (Violet) - Radius 42 */}
+              <circle cx="150" cy="150" r="42" fill="none" stroke="rgba(139, 92, 246, 0.06)" strokeWidth="6" />
+              <circle 
+                cx="150" 
+                cy="150" 
+                r="42" 
+                fill="none" 
+                stroke="rgba(139, 92, 246, 0.9)" 
+                strokeWidth="6" 
+                strokeLinecap="round"
+                strokeDasharray="264" 
+                strokeDashoffset={264 - (264 * (state.progress.academic || 0)) / 100} 
+                filter="url(#radar-glow)"
+                style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
+              />
+              
+              {/* Inner Sweep Sonar Line */}
+              <line 
+                x1="150" 
+                y1="150" 
+                x2="150" 
+                y2="20" 
+                stroke="rgba(0, 243, 255, 0.15)" 
+                strokeWidth="1.5" 
+                style={{ transformOrigin: "150px 150px", animation: "radar-sweep 6s linear infinite" }} 
+              />
+            </svg>
+            
+            <div style={styles.radarInfo}>
+              <span style={styles.radarLabel}>OVERALL</span>
+              <span style={styles.radarVal}>{Math.round(total / 5)}%</span>
+              <span style={styles.radarStatus}>ACTIVE</span>
+            </div>
+          </div>
+
+          <div style={styles.terminalTrackers}>
+            {Object.entries(state.progress).map(([k, v]) => {
+              const litSegments = Math.round(v / 10);
+              const colors = {
+                academic: "rgba(139, 92, 246, 1)",
+                industry: "rgba(56, 189, 248, 1)",
+                skills: "rgba(34, 197, 94, 1)",
+                certifications: "rgba(245, 158, 11, 1)",
+                networking: "rgba(236, 72, 153, 1)"
+              };
+              const color = colors[k] || "var(--accent)";
+              return (
+                <div key={k} style={styles.trackerRow}>
+                  <div style={styles.trackerHeader}>
+                    <span style={{ ...styles.trackerName, display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
+                      {`> SYS.${k.toUpperCase()}`}
+                    </span>
+                    <span style={{ ...styles.trackerPct, color }}>{v}%</span>
+                  </div>
+                  <div style={styles.ledBar}>
+                    {Array.from({ length: 10 }).map((_, idx) => {
+                      const isLit = idx < litSegments;
+                      return (
+                        <div 
+                          key={idx} 
+                          style={{
+                            ...styles.ledSegment,
+                            backgroundColor: isLit ? color : "rgba(255,255,255,0.05)",
+                            boxShadow: isLit ? `0 0 8px ${color}` : "none",
+                            animation: isLit ? "led-charge 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both" : "none",
+                            animationDelay: isLit ? `${idx * 0.04}s` : "0s"
+                          }} 
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div style={styles.progressList}>
-          {Object.entries(state.progress).map(([k, v]) => (
-            <div key={k} style={styles.progressRow}>
-              <span style={styles.progressKey}>{k}</span>
-              <span style={styles.progressVal}>{v}%</span>
-            </div>
-          ))}
-        </div>
+        <div style={styles.divider} />
+
+        <h2 style={styles.h2}>AI Insight</h2>
+        <p style={styles.p}>
+          {state.explanation || "Add a log to get AI insights."}
+        </p>
       </BentoCard>
 
       {/* RIGHT: LOG + TODOS + TIMELINE */}
@@ -340,14 +435,6 @@ export default function GrowthTracker() {
           )}
         </ul>
 
-        <div style={styles.divider} />
-
-        <h2 style={styles.h2}>AI Insight</h2>
-        <p style={styles.p}>
-          {state.explanation || "Add a log to get AI insights."}
-        </p>
-
-        {/* ✅ NEW: Timeline */}
         <div style={styles.divider} />
         <h2 style={styles.h2}>Recent Activity</h2>
 
@@ -498,58 +585,98 @@ const styles = {
     margin: "14px 0",
   },
 
-  chartWrap: {
-    position: "relative",
+  hudContainer: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    alignItems: "center",
+    gap: "32px",
+    marginTop: "16px",
     width: "100%",
-    maxWidth: 380,
-    margin: "0 auto",
   },
-
-  chartCenter: {
-    position: "absolute",
-    inset: 0,
+  radarWrapper: {
+    position: "relative",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "column",
+    width: "320px",
+    height: "320px",
+    borderRadius: "50%",
+    background: "rgba(0, 243, 255, 0.02)",
+    border: "2px solid var(--border)",
+    boxShadow: "inset 0 0 35px rgba(0, 243, 255, 0.08)",
+  },
+  radarSvg: {
+    position: "absolute",
+    inset: 0,
     pointerEvents: "none",
   },
-
-  centerBig: {
-    fontSize: 30,
-    fontWeight: 900,
-    color: theme.colors.textPrimary,
+  radarInfo: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+    fontFamily: "'Share Tech Mono', monospace",
   },
-
-  centerSmall: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
+  radarLabel: {
+    fontSize: "9px",
+    letterSpacing: "0.5px",
+    color: "var(--text-secondary)",
   },
-
-  progressList: {
-    marginTop: 12,
+  radarVal: {
+    fontSize: "24px",
+    fontWeight: "900",
+    color: "var(--accent)",
+    textShadow: "0 0 10px rgba(0, 243, 255, 0.7)",
+    margin: "2px 0",
+  },
+  radarStatus: {
+    fontSize: "9px",
+    color: "var(--success)",
+    textShadow: "0 0 4px var(--success)",
+  },
+  terminalTrackers: {
+    flex: 1,
+    minWidth: "260px",
     display: "grid",
-    gap: 8,
+    gap: "14px",
   },
-
-  progressRow: {
+  trackerRow: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
+    background: "rgba(0,0,0,0.25)",
+  },
+  trackerHeader: {
     display: "flex",
     justifyContent: "space-between",
-    padding: "10px 12px",
-    borderRadius: theme.radii.md,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(255,255,255,0.03)",
+    alignItems: "center",
+    fontFamily: "'Share Tech Mono', monospace",
   },
-
-  progressKey: {
-    color: theme.colors.textSecondary,
-    textTransform: "capitalize",
+  trackerName: {
+    fontSize: "13px",
+    color: "var(--text-primary)",
   },
-
-  progressVal: {
-    color: theme.colors.textPrimary,
-    fontWeight: 800,
+  trackerPct: {
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "var(--accent)",
+  },
+  ledBar: {
+    display: "flex",
+    gap: "4px",
+    width: "100%",
+  },
+  ledSegment: {
+    flex: 1,
+    height: "10px",
+    borderRadius: "2px",
+    transition: "background-color 0.3s ease, box-shadow 0.3s ease",
   },
 
   todoList: {

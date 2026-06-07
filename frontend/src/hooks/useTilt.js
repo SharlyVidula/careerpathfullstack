@@ -1,65 +1,86 @@
 import { useEffect, useRef } from "react";
 
+/**
+ * useTilt — 3D card tilt + specular glass sheen
+ * Returns { cardRef, sheenRef }
+ * Mount cardRef on the card wrapper, sheenRef on an absolutely-positioned overlay div.
+ */
 export default function useTilt(options = {}) {
-    const ref = useRef(null);
+  const cardRef = useRef(null);
+  const sheenRef = useRef(null);
 
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
+  useEffect(() => {
+    const el = cardRef.current;
+    const sheen = sheenRef.current;
+    if (!el) return;
 
-        // Determine physics bounds
-        const maxTilt = options.maxTilt || 10; // degrees
-        const scale = options.scale || 1.02; // scalar
+    const maxTilt = options.maxTilt ?? 8;
+    const scale   = options.scale   ?? 1.02;
 
-        // We want the element to be structurally ready for 3d
-        el.style.transformStyle = "preserve-3d";
+    el.style.transformStyle = "preserve-3d";
 
-        let isMouseOver = false;
+    let isOver = false;
+    let rafId  = null;
 
-        const handleMouseMove = (e) => {
-            if (!isMouseOver) return;
+    const onMove = (e) => {
+      if (!isOver) return;
+      if (rafId) cancelAnimationFrame(rafId);
 
-            requestAnimationFrame(() => {
-                const rect = el.getBoundingClientRect();
-                const absoluteX = e.clientX - rect.left; // x cursor relative to card
-                const absoluteY = e.clientY - rect.top;  // y cursor relative to card
+      rafId = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const ax   = e.clientX - rect.left;
+        const ay   = e.clientY - rect.top;
+        const nx   = (ax - rect.width  / 2) / (rect.width  / 2); // -1 → 1
+        const ny   = (ay - rect.height / 2) / (rect.height / 2); // -1 → 1
 
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
+        const rX = ny * -maxTilt;
+        const rY = nx *  maxTilt;
 
-                // Ranges between -1 and 1
-                const normalizedX = (absoluteX - centerX) / centerX;
-                const normalizedY = (absoluteY - centerY) / centerY;
+        el.style.transform =
+          `perspective(1000px) rotateX(${rX}deg) rotateY(${rY}deg) scale3d(${scale},${scale},${scale})`;
 
-                // Multiply by maxTilt
-                const rotateX = normalizedY * -maxTilt; // Invert Y axis
-                const rotateY = normalizedX * maxTilt;
+        // Specular sheen — radial gradient that chases the cursor
+        if (sheen) {
+          const pctX = (ax / rect.width)  * 100;
+          const pctY = (ay / rect.height) * 100;
+          sheen.style.background =
+            `radial-gradient(circle at ${pctX}% ${pctY}%, ` +
+            `rgba(255,255,255,0.14) 0%, ` +
+            `rgba(0,243,255,0.04) 40%, ` +
+            `transparent 70%)`;
+          sheen.style.opacity = "1";
+        }
+      });
+    };
 
-                el.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${scale}, ${scale}, ${scale})`;
-            });
-        };
+    const onEnter = () => {
+      isOver = true;
+      el.style.transition = "transform 0.08s cubic-bezier(0.2,0.8,0.2,1)";
+      if (sheen) sheen.style.transition = "opacity 0.25s ease";
+    };
 
-        const handleMouseEnter = () => {
-            isMouseOver = true;
-            el.style.transition = "transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1)";
-        };
+    const onLeave = () => {
+      isOver = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      el.style.transition = "transform 0.55s cubic-bezier(0.2,0.8,0.2,1)";
+      el.style.transform   = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)";
+      if (sheen) {
+        sheen.style.transition = "opacity 0.4s ease";
+        sheen.style.opacity    = "0";
+      }
+    };
 
-        const handleMouseLeave = () => {
-            isMouseOver = false;
-            el.style.transition = "transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)";
-            el.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-        };
+    el.addEventListener("mouseenter", onEnter);
+    el.addEventListener("mousemove",  onMove);
+    el.addEventListener("mouseleave", onLeave);
 
-        el.addEventListener("mouseenter", handleMouseEnter);
-        el.addEventListener("mousemove", handleMouseMove);
-        el.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      el.removeEventListener("mouseenter", onEnter);
+      el.removeEventListener("mousemove",  onMove);
+      el.removeEventListener("mouseleave", onLeave);
+    };
+  }, [options.maxTilt, options.scale]);
 
-        return () => {
-            el.removeEventListener("mouseenter", handleMouseEnter);
-            el.removeEventListener("mousemove", handleMouseMove);
-            el.removeEventListener("mouseleave", handleMouseLeave);
-        };
-    }, [options.maxTilt, options.scale]);
-
-    return ref;
+  return { cardRef, sheenRef };
 }

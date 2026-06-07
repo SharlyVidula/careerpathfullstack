@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from "../apiClient";
 import theme from "../theme";
 import BentoCard from "../components/BentoCard";
 import { useToast } from "../components/ToastContext";
@@ -15,6 +15,8 @@ export default function EmployerDashboard() {
 
   // 🆕 State for Job Form
   const [jobForm, setJobForm] = useState({ title: "", description: "", salary: "", location: "" });
+  const [deleteModal, setDeleteModal] = useState({ show: false, jobId: null });
+  const [candidateModal, setCandidateModal] = useState({ show: false, candidate: null });
 
   useEffect(() => {
     // 1. Check Login
@@ -30,7 +32,7 @@ export default function EmployerDashboard() {
 
   const fetchCandidates = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/candidates");
+      const res = await apiClient.get("/users/candidates");
       setCandidates(res.data.candidates || []);
     } catch (err) {
       console.error("Error fetching candidates", err);
@@ -41,7 +43,7 @@ export default function EmployerDashboard() {
 
   const fetchMyJobs = async (employerId) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/users/employer-jobs?employerId=${employerId}`);
+      const res = await apiClient.get(`/users/employer-jobs?employerId=${employerId}`);
       setMyJobs(res.data.jobs || []);
     } catch (err) {
       console.error("Error fetching my jobs", err);
@@ -56,7 +58,7 @@ export default function EmployerDashboard() {
       return;
     }
     try {
-      await axios.post("http://localhost:5000/api/users/request-connection", {
+      await apiClient.post("/users/request-connection", {
         employerId: user.id,
         employeeId: employeeId
       });
@@ -75,19 +77,140 @@ export default function EmployerDashboard() {
     }
 
     try {
-      await axios.post("http://localhost:5000/api/users/post-job", {
+      await apiClient.post("/users/post-job", {
         ...jobForm,
         employerId: user.id
       });
       addToast("✅ Job Posted! It is now pending Admin approval.", "success");
       setJobForm({ title: "", description: "", salary: "", location: "" }); // Clear form
+      fetchMyJobs(user.id); // Refresh
     } catch (err) {
       addToast("Error posting job: " + err.message, "error");
     }
   };
 
+  const handleRemoveJob = (jobId) => {
+    setDeleteModal({ show: true, jobId });
+  };
+
+  const confirmRemoveJob = async () => {
+    const jobId = deleteModal.jobId;
+    setDeleteModal({ show: false, jobId: null });
+    try {
+      await apiClient.delete(`/users/jobs/${jobId}`);
+      addToast("Vacancy removed successfully", "success");
+      setMyJobs(myJobs.filter(job => job._id !== jobId));
+    } catch (err) {
+      addToast("Failed to remove vacancy", "error");
+    }
+  };
+
   return (
     <div className="bento-grid" style={styles.page}>
+      {/* 🛑 DELETE CONFIRMATION MODAL */}
+      {deleteModal.show && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent} className="card-animate">
+            <h3 style={{ margin: "0 0 10px 0", color: "var(--text-primary)" }}>Remove Vacancy</h3>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "20px", fontSize: "14px" }}>
+              Are you sure you want to remove this vacancy? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button 
+                onClick={() => setDeleteModal({ show: false, jobId: null })} 
+                style={styles.cancelBtn}
+                className="button-hover"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmRemoveJob} 
+                style={styles.confirmDeleteBtn}
+                className="button-hover"
+              >
+                Yes, Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📄 CANDIDATE DETAILS MODAL */}
+      {candidateModal.show && candidateModal.candidate && (
+        <div style={styles.modalOverlay} onClick={() => setCandidateModal({ show: false, candidate: null })}>
+          <div style={{...styles.modalContent, maxWidth: "600px", maxHeight: "85vh", overflowY: "auto"}} onClick={e => e.stopPropagation()} className="card-animate">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+              <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                <div style={{ ...styles.avatar, width: "60px", height: "60px", fontSize: "20px" }}>
+                  {candidateModal.candidate.profilePic ? <img src={candidateModal.candidate.profilePic} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} alt="Profile" /> : candidateModal.candidate.name?.[0]}
+                </div>
+                <div>
+                  <h2 style={{ margin: "0", color: "var(--text-primary)" }}>{candidateModal.candidate.name}</h2>
+                  <p style={{ margin: "2px 0 0", color: "var(--text-secondary)" }}>{candidateModal.candidate.email}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setCandidateModal({ show: false, candidate: null })}
+                style={{ background: "transparent", border: "none", color: "var(--text-secondary)", fontSize: "24px", cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
+              {candidateModal.candidate.seekingRole ? (
+                <span style={{...styles.roleTag, fontSize: "14px", padding: "6px 12px"}}>{candidateModal.candidate.seekingRole}</span>
+              ) : (
+                <span style={{...styles.roleTag, background: "#333", color: "#888", fontSize: "14px", padding: "6px 12px"}}>General Applicant</span>
+              )}
+              {candidateModal.candidate.atsScore > 0 && (
+                <span style={{...styles.roleTag, background: "#10b981", color: "#000", fontSize: "14px", padding: "6px 12px"}}>ATS: {candidateModal.candidate.atsScore}%</span>
+              )}
+            </div>
+
+            {candidateModal.candidate.skills && candidateModal.candidate.skills.length > 0 && (
+              <div style={{ marginBottom: "20px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "var(--text-primary)" }}>Key Skills</h4>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {candidateModal.candidate.skills.map((skill, idx) => (
+                    <span key={idx} style={{ fontSize: "13px", color: "var(--text-primary)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", padding: "6px 12px" }}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {candidateModal.candidate.bioSnippet && (
+              <div style={{ marginBottom: "20px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "var(--text-primary)" }}>Bio Snippet</h4>
+                <p style={{ color: "var(--text-secondary)", fontSize: "14px", lineHeight: "1.5", margin: 0 }}>
+                  "{candidateModal.candidate.bioSnippet}"
+                </p>
+              </div>
+            )}
+
+            {candidateModal.candidate.resumeText && (
+              <div style={{ marginBottom: "20px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "var(--text-primary)" }}>Resume Extracted Text</h4>
+                <div style={{ background: "rgba(0,0,0,0.3)", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "200px", overflowY: "auto", fontSize: "13px", color: "var(--text-secondary)", whiteSpace: "pre-wrap", lineHeight: "1.5" }}>
+                  {candidateModal.candidate.resumeText}
+                </div>
+              </div>
+            )}
+
+            <button 
+              onClick={() => {
+                sendRequest(candidateModal.candidate._id);
+                setCandidateModal({ show: false, candidate: null });
+              }} 
+              style={{ ...styles.connectBtn, marginTop: "10px", width: "100%" }}
+              className="button-hover"
+            >
+              Request Connection
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Card - Spans 4 Columns */}
       <BentoCard colSpan={4} padding="32px">
         <h2 style={styles.title}>Employer Portal</h2>
@@ -147,7 +270,17 @@ export default function EmployerDashboard() {
             {myJobs.map(job => (
               <div key={job._id} style={styles.candidateCard}>
                 <div>
-                  <h4 style={{ margin: "0 0 5px 0", color: "white" }}>{job.title}</h4>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <h4 style={{ margin: "0 0 5px 0", color: "white", paddingRight: "10px" }}>{job.title}</h4>
+                    <button 
+                      onClick={() => handleRemoveJob(job._id)} 
+                      style={styles.deleteBtn} 
+                      className="button-hover"
+                      title="Remove Vacancy"
+                    >
+                      ✕
+                    </button>
+                  </div>
                   <span style={{ fontSize: "12px", color: job.status === "approved" ? "#34d399" : "#fbbf24", fontWeight: "bold", background: job.status === "approved" ? "rgba(52, 211, 153, 0.1)" : "rgba(251, 191, 36, 0.2)", padding: "2px 8px", borderRadius: "4px" }}>
                     {job.status.toUpperCase()}
                   </span>
@@ -206,7 +339,13 @@ export default function EmployerDashboard() {
             .map((c) => (
               <div key={c._id} style={styles.candidateCard}>
                 <div>
-                  <div style={styles.avatar}>
+                  <div 
+                    style={{ ...styles.avatar, cursor: "pointer", border: "2px solid transparent", transition: "border-color 0.2s" }}
+                    onClick={() => setCandidateModal({ show: true, candidate: c })}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = "#a78bfa"}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = "transparent"}
+                    title="View Full Profile"
+                  >
                     {c.profilePic ? <img src={c.profilePic} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} alt="Profile" /> : c.name?.[0]}
                   </div>
                   <h4 style={{ margin: "10px 0 5px", color: theme.colors.textPrimary }}>{c.name}</h4>
@@ -371,5 +510,51 @@ const styles = {
     background: "#34d399", // Green for posting
     width: "100%",
     marginTop: 10
+  },
+  deleteBtn: {
+    background: "rgba(239, 68, 68, 0.15)",
+    border: "1px solid rgba(239, 68, 68, 0.4)",
+    color: "#ef4444",
+    borderRadius: "50%",
+    width: "28px",
+    height: "28px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    flexShrink: 0,
+    fontSize: "12px",
+    padding: 0
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: "rgba(0,0,0,0.7)",
+    backdropFilter: "blur(4px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999
+  },
+  modalContent: {
+    background: "var(--surface)",
+    border: `1px solid var(--border)`,
+    borderRadius: theme.radii.lg,
+    padding: "24px",
+    width: "90%",
+    maxWidth: "400px",
+    boxShadow: "0 10px 40px rgba(0,0,0,0.5)"
+  },
+  cancelBtn: {
+    ...theme.button("ghost"),
+    background: "rgba(255,255,255,0.05)",
+    color: "var(--text-primary)"
+  },
+  confirmDeleteBtn: {
+    ...theme.button("danger"),
+    background: "#ef4444",
+    color: "#fff",
+    backgroundImage: "none"
   }
 };

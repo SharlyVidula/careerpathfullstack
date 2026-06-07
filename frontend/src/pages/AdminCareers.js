@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../apiClient";
 import theme from "../theme";
 import BentoCard from "../components/BentoCard";
 
@@ -22,7 +22,7 @@ export default function AdminCareers() {
 
   async function load() {
     try {
-      const r = await axios.get("/api/admin/careers");
+      const r = await apiClient.get("/admin/careers");
       setList(r.data.careers || []);
     } catch (e) {
       console.error(e);
@@ -34,10 +34,10 @@ export default function AdminCareers() {
 
     try {
       if (editing) {
-        await axios.put("/api/admin/careers/" + editing._id, payload);
+        await apiClient.put("/admin/careers/" + editing._id, payload);
         setEditing(null);
       } else {
-        await axios.post("/api/admin/careers", payload);
+        await apiClient.post("/admin/careers", payload);
       }
 
       setForm({
@@ -94,7 +94,7 @@ export default function AdminCareers() {
                     const ok = safeConfirm("Are you sure you want to delete this career?");
                     if (!ok) return;
                     try {
-                      await axios.delete("/api/admin/careers/" + c._id);
+                      await apiClient.delete("/admin/careers/" + c._id);
                       load();
                     } catch (e) { console.error(e); }
                   }}

@@ -1,5 +1,4 @@
 import React from 'react';
-import theme from '../theme';
 
 export default function Skeleton({ width = '100%', height = '20px', borderRadius = '12px', style = {}, ...props }) {
     return (

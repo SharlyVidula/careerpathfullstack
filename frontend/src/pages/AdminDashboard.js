@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../apiClient";
 import theme from "../theme";
 import { sendNotification } from "../emailService"; // ✅ Keeps the Email Feature working
 import BentoCard from "../components/BentoCard";
@@ -34,12 +34,13 @@ export default function AdminDashboard() {
     Promise.all([fetchPendingRequests(), fetchPendingJobs()]).finally(() => {
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // --- FETCHING DATA ---
   const fetchPendingRequests = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/admin/pending-requests");
+      const res = await apiClient.get("/users/admin/pending-requests");
       setRequests(res.data.requests || []);
     } catch (err) {
       console.error("Error fetching admin requests", err);
@@ -48,7 +49,7 @@ export default function AdminDashboard() {
 
   const fetchPendingJobs = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/admin/pending-jobs");
+      const res = await apiClient.get("/users/admin/pending-jobs");
       setPendingJobs(res.data.jobs || []);
     } catch (err) {
       console.error("Error fetching jobs", err);
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
     try {
       const newStatus = decision === 'approve' ? 'PENDING_EMPLOYEE' : 'DENIED';
       
-      await axios.put(`http://localhost:5000/api/users/requests/${req._id}`, {
+      await apiClient.put(`/users/requests/${req._id}`, {
         status: newStatus
       });
 
@@ -88,7 +89,7 @@ export default function AdminDashboard() {
   const handleJobDecision = async (jobId, decision) => {
     try {
         const status = decision === 'approve' ? 'approved' : 'rejected';
-        await axios.put(`http://localhost:5000/api/users/admin/jobs/${jobId}`, { status });
+        await apiClient.put(`/users/admin/jobs/${jobId}`, { status });
         addToast(`Job Post ${status.toUpperCase()}!`, "success");
         fetchPendingJobs(); // Refresh
     } catch (err) {

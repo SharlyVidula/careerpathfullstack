@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import apiClient from "./apiClient";
 import theme from "./theme";
 import { useToast } from "./components/ToastContext";
 
@@ -19,7 +19,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/users/login", formData);
+      const res = await apiClient.post("/users/login", formData);
 
       // 1. Save User Data
       localStorage.setItem("token", res.data.token);

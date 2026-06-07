@@ -1,55 +1,129 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
 
 :root {
-  --bg: #050915;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-alt: rgba(255, 255, 255, 0.08);
-  --border: rgba(255, 255, 255, 0.12);
-  --text-primary: #e9ecf5;
-  --text-secondary: #b8c2d6;
-  --accent: #67e8f9;
-  --accent-strong: #7c3aed;
-  --success: #34d399;
-  --danger: #f87171;
-  --grad-bg: radial-gradient(circle at 20% 20%, rgba(76, 0, 255, 0.18), transparent 28%), radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.16), transparent 30%), radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.12), transparent 22%), linear-gradient(140deg, #050915, #070d1d 45%, #041024);
-  --grad-glass-edge: linear-gradient(135deg, rgba(103, 232, 249, 0.16), rgba(124, 58, 237, 0.12));
-  --grad-primary: linear-gradient(135deg, #67e8f9, #7c3aed);
-  --grad-secondary: linear-gradient(135deg, #34d399, #0ea5e9);
-  --grad-danger: linear-gradient(135deg, #f87171, #fb923c);
-  --btn-text: #0b1224;
+  --bg: #090812;
+  --surface: rgba(16, 12, 32, 0.65);
+  --surface-alt: rgba(24, 18, 48, 0.8);
+  --border: rgba(0, 243, 255, 0.25);
+  --text-primary: #e0f8ff;
+  --text-secondary: #8c9cb6;
+  --accent: #00f3ff; /* Retro neon cyan */
+  --accent-strong: #ff007f; /* Retro neon pink/magenta */
+  --success: #39ff14; /* Laser green */
+  --danger: #ff3131; /* Laser red */
+  --grad-bg: radial-gradient(circle at 10% 20%, rgba(255, 0, 127, 0.12), transparent 35%), radial-gradient(circle at 90% 10%, rgba(0, 243, 255, 0.15), transparent 35%), radial-gradient(circle at 50% 95%, rgba(57, 255, 20, 0.08), transparent 28%), linear-gradient(180deg, #090812 0%, #030307 100%);
+  --grad-glass-edge: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(255, 0, 127, 0.15));
+  --grad-primary: linear-gradient(135deg, #00f3ff, #ff007f);
+  --grad-secondary: linear-gradient(135deg, #39ff14, #00f3ff);
+  --grad-danger: linear-gradient(135deg, #ff3131, #ff9900);
+  --btn-text: #05050b;
 
-  --radius-lg: 24px;
-  --radius-md: 14px;
-  --shadow: 0 18px 50px rgba(5, 12, 30, 0.45);
-  --blur: 18px;
+  /* Button gradient tokens (dark) */
+  --btn-grad-primary:   linear-gradient(135deg, #00f3ff, #ff007f);
+  --btn-grad-secondary: linear-gradient(135deg, #39ff14, #00f3ff);
+  --btn-grad-danger:    linear-gradient(135deg, #ff3131, #ff9900);
+  --btn-grad-ghost-border: rgba(0, 243, 255, 0.5);
+
+  --radius-lg: 18px;
+  --radius-md: 10px;
+  --shadow: 0 0 25px rgba(0, 243, 255, 0.15);
+  --blur: 15px;
+
+  /* Glassmorphism Design Engine (Dark) */
+  --glass-bg: rgba(14, 10, 30, 0.55);
+  --glass-bg-alt: rgba(22, 16, 48, 0.70);
+  --glass-border: rgba(0, 243, 255, 0.18);
+  --glass-border-top: rgba(255, 255, 255, 0.12);
+  --glass-blur: 22px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+  --glass-glow: 0 0 0 1px rgba(0, 243, 255, 0.12), 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 243, 255, 0.08);
+  --glass-hover-glow: 0 0 0 1px rgba(0, 243, 255, 0.35), 0 12px 50px rgba(0, 0, 0, 0.65), 0 0 40px rgba(0, 243, 255, 0.15), inset 0 1px 0 rgba(255,255,255,0.1);
+  --glass-inset: inset 0 2px 20px rgba(0, 243, 255, 0.05), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
+/*
+ * ──────────────────────────────────────────────────────
+ *  LIGHT MODE — “Arctic Glass”
+ *  Cool slate base, indigo/sky accents, deep navy text.
+ *  Calm, elegant, high-contrast — not blown-out neon.
+ * ──────────────────────────────────────────────────────
+ */
 body.light-mode {
-  --bg: #f4f7fb;
-  --surface: rgba(255, 255, 255, 0.55);
-  --surface-alt: rgba(255, 255, 255, 0.7);
-  --border: rgba(0, 0, 0, 0.08);
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --accent: #0ea5e9;
-  --accent-strong: #4f46e5;
-  --success: #10b981;
-  --danger: #ef4444;
-  --grad-bg: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.08), transparent 28%), radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 30%), radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.06), transparent 22%), linear-gradient(140deg, #f8fafc, #f1f5f9 45%, #e2e8f0);
-  --grad-glass-edge: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(79, 70, 229, 0.1));
-  --grad-primary: linear-gradient(135deg, #38bdf8, #818cf8);
-  --grad-secondary: linear-gradient(135deg, #34d399, #38bdf8);
-  --grad-danger: linear-gradient(135deg, #f87171, #fb923c);
-  --btn-text: #ffffff;
+  /* Palette */
+  --bg:           #f0f4fb;
+  --surface:      rgba(248, 250, 255, 0.70);
+  --surface-alt:  rgba(255, 255, 255, 0.88);
+  --border:       rgba(99, 102, 241, 0.16);
+  --text-primary:   #0f172a;  /* deep navy  */
+  --text-secondary: #475569;  /* cool slate */
+
+  /* Accent colours — rich but not neon */
+  --accent:        #4f46e5;   /* indigo        */
+  --accent-strong: #0ea5e9;   /* sky blue      */
+  --success:       #059669;   /* emerald       */
+  --danger:        #dc2626;   /* crimson       */
+
+  /* Background gradient: soft indigo/sky radials on cool white */
+  --grad-bg:
+    radial-gradient(circle at 18% 22%, rgba(99, 102, 241, 0.10), transparent 42%),
+    radial-gradient(circle at 82% 12%, rgba(14, 165, 233, 0.09), transparent 42%),
+    radial-gradient(circle at 50% 92%, rgba(124, 58, 237, 0.06), transparent 36%),
+    linear-gradient(180deg, #f0f4fb 0%, #e8eef8 100%);
+
+  --grad-glass-edge: linear-gradient(135deg, rgba(79, 70, 229, 0.18), rgba(14, 165, 233, 0.14));
+  --grad-primary:    linear-gradient(135deg, #4f46e5, #0ea5e9);
+  --grad-secondary:  linear-gradient(135deg, #059669, #4f46e5);
+  --grad-danger:     linear-gradient(135deg, #dc2626, #ea580c);
+  --btn-text:        #ffffff;
+
+  /* Button gradient tokens (light) */
+  --btn-grad-primary:   linear-gradient(135deg, #4f46e5, #0ea5e9);
+  --btn-grad-secondary: linear-gradient(135deg, #059669, #4f46e5);
+  --btn-grad-danger:    linear-gradient(135deg, #dc2626, #ea580c);
+  --btn-grad-ghost-border: rgba(79, 70, 229, 0.5);
+
+  /* Glassmorphism Design Engine (Light — Arctic Glass) */
+  --glass-bg:         rgba(240, 244, 251, 0.62);
+  --glass-bg-alt:     rgba(255, 255, 255, 0.82);
+  --glass-border:     rgba(99, 102, 241, 0.14);
+  --glass-border-top: rgba(255, 255, 255, 0.92);
+  --glass-blur:       22px;
+  --glass-shadow:
+    0 4px 24px rgba(99, 102, 241, 0.08),
+    0 1px 4px  rgba(99, 102, 241, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  --glass-glow:
+    0 0 0 1px rgba(99, 102, 241, 0.10),
+    0 8px 32px rgba(99, 102, 241, 0.08);
+  --glass-hover-glow:
+    0 0 0 1px rgba(79, 70, 229, 0.28),
+    0 12px 40px rgba(99, 102, 241, 0.14),
+    0 0 28px rgba(79, 70, 229, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  --glass-inset:
+    inset 0 2px 16px rgba(99, 102, 241, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
+/* Light mode — Arctic Glass — element overrides */
 body.light-mode .neon-grid {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(180deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 120px 120px;
+  background:
+    linear-gradient(90deg,  rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
 }
 
-body.light-mode .float-orb {
-  opacity: 0.25;
+body.light-mode .neon-grid-perspective {
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+}
+
+body.light-mode .float-orb       { opacity: 0.18; }
+body.light-mode .float-orb.one   { background: #6366f1; }  /* indigo */
+body.light-mode .float-orb.two   { background: #38bdf8; }  /* sky    */
+
+body.light-mode .scanlines {
+  opacity: 0.25;  /* much softer in light mode */
 }
 
 * {
@@ -69,10 +143,11 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 ::selection {
-  background: rgba(103, 232, 249, 0.25);
+  background: rgba(0, 243, 255, 0.25);
   color: #e0faff;
 }
 
@@ -81,6 +156,7 @@ a {
   max-width: 1600px;
   margin: 0 auto;
   padding: 24px 18px 60px;
+  z-index: 2; /* sits above particle canvas + orbs */
 }
 
 .glow-shell::before,
@@ -96,7 +172,7 @@ a {
 .glow-shell::before {
   width: 360px;
   height: 360px;
-  background: radial-gradient(circle, rgba(103, 232, 249, 0.35), transparent 50%);
+  background: radial-gradient(circle, rgba(0, 243, 255, 0.25), transparent 50%);
   top: -80px;
   right: -120px;
 }
@@ -104,7 +180,7 @@ a {
 .glow-shell::after {
   width: 280px;
   height: 280px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.32), transparent 55%);
+  background: radial-gradient(circle, rgba(255, 0, 127, 0.22), transparent 55%);
   bottom: -60px;
   left: -120px;
 }
@@ -115,70 +191,248 @@ a {
   }
 }
 
+/* =========================================
+   Retrofuturistic Visual Elements
+   ========================================= */
+
 .neon-grid {
   position: absolute;
   inset: 0;
   background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.03) 1px,
+      rgba(0, 243, 255, 0.04) 1px,
       transparent 1px
     ),
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.03) 1px,
+      rgba(0, 243, 255, 0.04) 1px,
       transparent 1px
     );
-  background-size: 120px 120px;
-  mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 70%);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 80%);
   pointer-events: none;
   z-index: 0;
 }
 
+.neon-grid-perspective {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45vh;
+  background-image: 
+    linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center bottom;
+  transform: perspective(350px) rotateX(78deg);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0));
+  animation: grid-scroll 2.5s linear infinite;
+}
+
+@keyframes grid-scroll {
+  from {
+    background-position: center 0px;
+  }
+  to {
+    background-position: center 50px;
+  }
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.12) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.015),
+    rgba(0, 255, 0, 0.008),
+    rgba(0, 0, 255, 0.015)
+  );
+  background-size: 100% 4px, 3px 100%;
+  animation: crt-flicker 0.18s infinite alternate;
+}
+
+.scanlines::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 0%, rgba(18, 16, 16, 0.22) 10%, rgba(18, 16, 16, 0) 20%);
+  background-size: 100% 100%;
+  animation: scanline-sweep 15s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanline-sweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 0.98; }
+  100% { opacity: 1; }
+}
+
+@keyframes boot-cursor {
+  from, to { background-color: transparent; box-shadow: none; }
+  50% { background-color: #39ff14; box-shadow: 0 0 6px #39ff14; }
+}
+
 .float-orb {
   position: absolute;
-  width: 220px;
-  height: 220px;
+  width: 320px;
+  height: 320px;
   border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.45;
-  animation: drift 14s ease-in-out infinite alternate;
+  filter: blur(90px);
+  opacity: 0.42;
+  /* No CSS animation — movement driven by JS parallax in App.js */
+  will-change: transform;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .float-orb.one {
-  background: #0ea5e9;
-  top: 8%;
-  left: 6%;
+  background: var(--accent);
+  top: 6%;
+  left: 5%;
 }
 
 .float-orb.two {
-  background: #22c55e;
-  bottom: 8%;
-  right: 8%;
-  animation-duration: 18s;
+  background: var(--accent-strong);
+  bottom: 6%;
+  right: 6%;
 }
 
+/* Headings Glow */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Share Tech Mono', 'Space Grotesk', system-ui, -apple-system, sans-serif !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body:not(.light-mode) h1, body:not(.light-mode) h2, body:not(.light-mode) h3 {
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
+}
+
+/* Light mode: subtle indigo glow, not bright pink */
+body.light-mode h1, body.light-mode h2, body.light-mode h3 {
+  text-shadow: 0 1px 3px rgba(79, 70, 229, 0.15);
+  color: var(--text-primary);
+}
+
+/* Micro Interactions */
 .card-animate {
-  transition: transform 320ms ease, box-shadow 320ms ease;
+  position: relative;
+  overflow: hidden;
+  transition: transform 320ms cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 320ms ease, border-color 320ms ease;
+}
+
+.card-animate::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.card-animate:hover::before {
+  opacity: 0.8;
+  animation: laser-sweep 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes laser-sweep {
+  0% { top: -5%; }
+  100% { top: 105%; }
+}
+
+/* ======================================================
+   Glassmorphism card surface — frosted glass panels
+   ====================================================== */
+.card-animate {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-top-color: var(--glass-border-top) !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  transition: transform 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.32s ease, border-color 0.32s ease, background 0.32s ease !important;
 }
 
 .card-animate:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 20px 60px rgba(103, 232, 249, 0.12);
+  transform: translateY(-5px) scale(1.008);
+  background: var(--glass-bg-alt) !important;
+  border-color: var(--accent) !important;
+  box-shadow: var(--glass-hover-glow) !important;
+}
+
+/* ============================================================
+   Button-hover: Glassmorphic 3D depth WITHOUT overriding colors
+   Each button keeps its own background/gradient from inline styles.
+   Only shadow + blur glow are layered on top.
+   ============================================================ */
+.button-hover {
+  box-shadow: 4px 4px 10px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.04) !important;
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.18s ease, filter 0.18s ease !important;
+  position: relative;
 }
 
 .button-hover:hover {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 16px 50px rgba(103, 232, 249, 0.28);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 6px 6px 18px rgba(0,0,0,0.6), -2px -2px 12px rgba(255,255,255,0.06), 0 0 14px var(--accent) !important;
+  filter: brightness(1.12);
 }
 
-@keyframes drift {
-  from {
-    transform: translate3d(0, 0, 0);
+.button-hover:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: inset 3px 3px 8px rgba(0,0,0,0.6), inset -2px -2px 6px rgba(255,255,255,0.03) !important;
+  filter: brightness(0.92);
+}
+
+/* Light mode overrides for button 3D depth */
+body.light-mode .button-hover {
+  box-shadow: 4px 4px 10px rgba(180,150,170,0.4), -3px -3px 8px rgba(255,255,255,0.9) !important;
+}
+body.light-mode .button-hover:hover {
+  box-shadow: 6px 6px 18px rgba(180,150,170,0.5), -3px -3px 12px rgba(255,255,255,0.95), 0 0 14px var(--accent) !important;
+}
+body.light-mode .button-hover:active {
+  box-shadow: inset 3px 3px 8px rgba(180,150,170,0.5), inset -2px -2px 6px rgba(255,255,255,0.85) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: var(--glass-inset), 0 0 16px rgba(0, 243, 255, 0.2) !important;
+  background: var(--glass-bg-alt) !important;
+}
+
+@keyframes led-charge {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.8);
+    filter: brightness(0.4);
   }
-  to {
-    transform: translate3d(10px, -20px, 0);
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1.2);
   }
 }
+
+/* drift animation removed — orb movement handled in App.js via requestAnimationFrame */
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -186,6 +440,23 @@ a {
 
 .ai-result-animate {
   animation: fadeIn 0.5s ease-out;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-strong);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 /* =========================================
@@ -203,13 +474,11 @@ a {
   padding: 24px 18px 60px;
 }
 
-/* Default Spans (Desktop >= 1200px) */
 .span-1 { grid-column: span 1; }
 .span-2 { grid-column: span 2; }
 .span-3 { grid-column: span 3; }
 .span-4 { grid-column: span 4; }
 
-/* Tablet (768px to 1199px) -> 2 columns max */
 @media (max-width: 1200px) {
   .bento-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -220,7 +489,6 @@ a {
   .span-4 { grid-column: span 2; }
 }
 
-/* Mobile (< 768px) -> 1 column max */
 @media (max-width: 768px) {
   .bento-grid {
     grid-template-columns: 1fr;
