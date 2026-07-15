@@ -137,7 +137,7 @@ function UserDashboard() {
       </BentoCard>
 
       {/* 2. AI RESUME PARSER - SPANS 2 COLUMNS */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{ ...styles.title, color: "#a78bfa", marginBottom: 15 }}>
           🧠 AI Resume Analyzer
         </h3>
@@ -292,10 +292,10 @@ function UserDashboard() {
       )}
 
       {/* 6. TOOLS */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <CareerForm fullWidth />
       </BentoCard>
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <ResumeEnhancer />
       </BentoCard>
     </div>

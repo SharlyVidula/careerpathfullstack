@@ -12,7 +12,7 @@ export default function useTilt(options = {}) {
   useEffect(() => {
     const el = cardRef.current;
     const sheen = sheenRef.current;
-    if (!el) return;
+    if (!el || options.disabled) return;
 
     const maxTilt = options.maxTilt ?? 8;
     const scale   = options.scale   ?? 1.02;
@@ -80,7 +80,7 @@ export default function useTilt(options = {}) {
       el.removeEventListener("mousemove",  onMove);
       el.removeEventListener("mouseleave", onLeave);
     };
-  }, [options.maxTilt, options.scale]);
+  }, [options.maxTilt, options.scale, options.disabled]);
 
   return { cardRef, sheenRef };
 }

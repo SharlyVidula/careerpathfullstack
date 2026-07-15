@@ -8,11 +8,13 @@ export default function BentoCard({
   padding  = "40px",
   className = "",
   style = {},
+  disableTilt = false,
   ...props
 }) {
   const { cardRef, sheenRef } = useTilt({
     maxTilt: Math.max(2, 7 / colSpan),
     scale:   1.012,
+    disabled: disableTilt,
   });
 
   return (
@@ -30,19 +32,21 @@ export default function BentoCard({
       {...props}
     >
       {/* ── Specular glass sheen layer (follows cursor via useTilt) ── */}
-      <div
-        ref={sheenRef}
-        aria-hidden
-        style={{
-          position:      "absolute",
-          inset:         0,
-          borderRadius:  "inherit",
-          opacity:       0,
-          pointerEvents: "none",
-          zIndex:        1,
-          mixBlendMode:  "screen",
-        }}
-      />
+      {!disableTilt && (
+        <div
+          ref={sheenRef}
+          aria-hidden
+          style={{
+            position:      "absolute",
+            inset:         0,
+            borderRadius:  "inherit",
+            opacity:       0,
+            pointerEvents: "none",
+            zIndex:        1,
+            mixBlendMode:  "screen",
+          }}
+        />
+      )}
 
       {/* ── Top-edge highlight (static glass rim light) ── */}
       <div

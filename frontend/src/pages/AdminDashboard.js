@@ -111,7 +111,7 @@ export default function AdminDashboard() {
       </BentoCard>
 
       {/* SECTION 1: JOB VACANCY APPROVALS (NEW) - Spans 2 Columns */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{...styles.title, marginBottom: 20, color: "#34d399"}}>
            📢 Job Post Approvals ({pendingJobs.length})
         </h3>
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
       </BentoCard>
 
       {/* SECTION 2: CONNECTION REQUESTS - Spans 2 Columns */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{...styles.title, marginBottom: 20}}>
             🔗 Connection Approvals ({requests.length})
         </h3>

@@ -398,7 +398,7 @@ export default function GrowthTracker() {
       </BentoCard>
 
       {/* RIGHT: LOG + TODOS + TIMELINE */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h2 style={styles.h2}>Today’s Log</h2>
 
         <textarea

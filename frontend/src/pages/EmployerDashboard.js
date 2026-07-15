@@ -221,7 +221,7 @@ export default function EmployerDashboard() {
       </BentoCard>
 
       {/* 📢 NEW SECTION: Post a Job Vacancy - Spans 2 Columns */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{ ...styles.title, marginBottom: 20, color: "#34d399" }}>📢 Post a New Vacancy</h3>
         <form onSubmit={handlePostJob} style={styles.formGrid}>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -261,7 +261,7 @@ export default function EmployerDashboard() {
       </BentoCard>
 
       {/* 📊 NEW SECTION: Your Posted Vacancies - Spans 2 Columns */}
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{ ...styles.title, marginBottom: 20 }}>📊 Your Posted Vacancies</h3>
         {myJobs.length === 0 ? (
           <p style={{ color: "#888" }}>You haven't posted any jobs yet.</p>
@@ -299,7 +299,7 @@ export default function EmployerDashboard() {
       </BentoCard>
 
       {/* Candidates Grid - Spans 4 Columns */}
-      <BentoCard colSpan={4}>
+      <BentoCard colSpan={4} disableTilt={true}>
         <h3 style={{ ...styles.title, marginBottom: 20 }}>Available Candidates</h3>
 
         {/* Search Input */}

@@ -60,7 +60,7 @@ export default function AdminCareers() {
         <p style={styles.subText}>Manage the predefined careers, skills, and interests in the system.</p>
       </BentoCard>
 
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{ ...styles.title, marginBottom: 20 }}>Career Database</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
           {list.length === 0 ? (
@@ -107,7 +107,7 @@ export default function AdminCareers() {
         </div>
       </BentoCard>
 
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h3 style={{ ...styles.title, marginBottom: 20, color: "#34d399" }}>
           {editing ? "Edit Career" : "Add New Career"}
         </h3>

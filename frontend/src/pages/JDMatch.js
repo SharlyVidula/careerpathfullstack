@@ -70,7 +70,7 @@ export default function JDMatch() {
         {!!error && <div style={styles.errorBox}>{error}</div>}
       </BentoCard>
 
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
           <h2 style={{ ...styles.h2, margin: 0 }}>Resume Text</h2>
           <button
@@ -100,7 +100,7 @@ export default function JDMatch() {
         />
       </BentoCard>
 
-      <BentoCard colSpan={2}>
+      <BentoCard colSpan={2} disableTilt={true}>
         <h2 style={styles.h2}>Job Role</h2>
         <textarea
           value={jobDescription}
