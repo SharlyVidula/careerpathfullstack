@@ -149,15 +149,7 @@ const styles = {
     fontWeight: "600"
   },
   input: {
-    width: "100%",
-    padding: "12px 16px",
-    background: "rgba(255, 255, 255, 0.05)",
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    color: "white",
-    fontSize: "14px",
-    outline: "none",
-    transition: "border-color 0.2s"
+    ...theme.input(),
   },
   button: {
     ...theme.button("primary"),

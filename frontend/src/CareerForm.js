@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import apiClient from "./apiClient";
 import { jsPDF } from "jspdf";
+import theme from "./theme";
 
 function parseList(input) {
   if (!input) return [];
@@ -153,15 +154,14 @@ export default function CareerForm() {
 
 const styles = {
   container: {
+    ...theme.glassPanel("24px"),
     width: "100%",
-    padding: 24,
-    borderRadius: 16,
-    background: "rgba(10,10,25,0.85)",
-    color: "#fff",
+    color: "var(--text-primary)",
   },
   title: {
     fontSize: 22,
     marginBottom: 16,
+    color: "var(--text-primary)",
   },
   form: {
     display: "flex",
@@ -173,42 +173,29 @@ const styles = {
     flexDirection: "column",
     gap: 4,
     fontSize: 14,
+    color: "var(--text-secondary)",
   },
   input: {
-    padding: "10px 12px",
-    borderRadius: 8,
-    border: "1px solid #444",
-    background: "rgba(0,0,0,0.3)",
-    color: "#fff",
+    ...theme.input(),
   },
   button: {
+    ...theme.button("primary"),
     marginTop: 8,
-    padding: "10px 14px",
-    borderRadius: 999,
-    border: "none",
-    background: "#4ade80",
-    color: "#041024",
-    fontWeight: 600,
-    cursor: "pointer",
   },
   error: {
     marginTop: 12,
     padding: 10,
     borderRadius: 8,
-    background: "rgba(255,0,0,0.1)",
-    color: "#ff8080",
+    background: "rgba(239, 68, 68, 0.1)",
+    color: "var(--danger)",
     fontSize: 14,
   },
 
-  // ⭐ NEW — PREMIUM RESULT BOX
   resultBox: {
+    ...theme.glassPanel("24px 28px"),
     marginTop: 24,
-    padding: "24px 28px",
-    borderRadius: 20,
-    background: "rgba(15, 23, 42, 0.75)",
-    border: "1px solid rgba(99,102,241,0.35)",
-    boxShadow: "0 0 20px rgba(99,102,241,0.25)",
-    backdropFilter: "blur(14px)",
+    background: "var(--glass-bg-alt)",
+    border: "1px solid var(--border)",
   },
 
   resultHeader: {
@@ -226,19 +213,18 @@ const styles = {
     fontSize: 24,
     fontWeight: "bold",
     margin: 0,
-    color: "#ffffff",
+    color: "var(--text-primary)",
   },
 
   resultDescription: {
     marginTop: 14,
     fontSize: 15,
     lineHeight: 1.55,
-    opacity: 0.9,
-    color: "#e2e8f0",
+    color: "var(--text-secondary)",
   },
 
   sectionTitle: {
-    color: "#8ab4ff",
+    color: "var(--accent)",
     fontWeight: 700,
     fontSize: 15,
   },
@@ -252,24 +238,15 @@ const styles = {
 
   skillPill: {
     padding: "8px 14px",
-    background: "rgba(56,189,248,0.15)",
+    background: "var(--card-item-bg)",
     borderRadius: 12,
     fontSize: 14,
-    color: "#7dd3fc",
-    border: "1px solid rgba(125,211,252,0.3)",
-    boxShadow: "0 0 8px rgba(125,211,252,0.25)",
+    color: "var(--text-primary)",
+    border: "1px solid var(--card-item-border)",
   },
 
-  // ⭐ PDF BUTTON STYLE
   pdfButton: {
+    ...theme.button("secondary"),
     marginTop: 20,
-    padding: "10px 16px",
-    background: "#3b82f6",
-    color: "white",
-    border: "none",
-    borderRadius: 10,
-    cursor: "pointer",
-    fontWeight: 600,
-    transition: "0.2s",
   },
 };

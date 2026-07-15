@@ -91,8 +91,8 @@ function Register() {
               onChange={handleChange}
               style={styles.select}
             >
-              <option value="user">Job Seeker (Student)</option>
-              <option value="employer">Employer (Recruiter)</option>
+              <option value="user" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>Job Seeker (Student)</option>
+              <option value="employer" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>Employer (Recruiter)</option>
             </select>
           </label>
 
@@ -177,14 +177,13 @@ const styles = {
     backgroundRepeat: "no-repeat",
     backgroundPosition: "right .7em top 50%",
     backgroundSize: ".65em auto",
-    backgroundColor: "rgba(255, 255, 255, 0.05)", // Slight background to match input
-    color: "white" // Ensure text is visible
+    backgroundColor: "var(--glass-bg-alt)", // Slight background to match input
+    color: "var(--text-primary)" // Ensure text is visible
   },
   button: {
     ...theme.button("secondary"),
     width: "100%",
     marginTop: theme.spacing.xs,
-    color: "#041024",
   },
   text: {
     marginTop: theme.spacing.md,

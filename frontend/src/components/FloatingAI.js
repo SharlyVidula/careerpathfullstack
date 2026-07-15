@@ -81,15 +81,16 @@ export default function FloatingAI() {
 
     return (
         <>
-            {/* Floating Orb Button */}
+            {/* Floating AI Button */}
             <button
                 onClick={() => setOpen(!open)}
                 className="button-hover"
                 style={{
                     position: "fixed", bottom: "30px", right: "30px", width: "60px", height: "60px",
-                    borderRadius: "50%", background: "var(--accent)", color: "#000", border: "none",
+                    borderRadius: "50%", background: "var(--accent)", color: "var(--btn-text)", border: "none",
                     fontWeight: "bold", fontSize: "24px", cursor: "pointer", zIndex: 9999,
-                    boxShadow: "0 0 20px var(--accent), 0 0 40px var(--accent)"
+                    boxShadow: "0 4px 20px rgba(99, 102, 241, 0.3)",
+                    display: "flex", alignItems: "center", justifyContent: "center"
                 }}
             >
                 ✦
@@ -117,9 +118,9 @@ export default function FloatingAI() {
                                     </div>
                                 ) : (
                                     <div style={{
-                                        background: m.role === "user" ? "var(--accent)" : "rgba(255,255,255,0.05)",
-                                        border: m.role === "user" ? "none" : "1px solid rgba(255,255,255,0.1)",
-                                        color: m.role === "user" ? "#000" : "var(--text-primary)",
+                                        background: m.role === "user" ? "var(--accent)" : "var(--card-item-bg)",
+                                        border: m.role === "user" ? "none" : "1px solid var(--card-item-border)",
+                                        color: m.role === "user" ? "var(--btn-text)" : "var(--text-primary)",
                                         padding: "10px 14px",
                                         borderRadius: "14px",
                                         borderBottomRightRadius: m.role === "user" ? 0 : "14px",
@@ -141,7 +142,7 @@ export default function FloatingAI() {
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSend()}
                             placeholder="Ask anything..."
-                            style={{ flex: 1, padding: "10px", borderRadius: "20px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.02)", color: "var(--text-primary)", outline: "none" }}
+                            style={{ flex: 1, padding: "10px", borderRadius: "20px", border: "1px solid var(--border)", background: "var(--card-item-bg)", color: "var(--text-primary)", outline: "none" }}
                         />
                         <button onClick={handleSend} style={{ background: "transparent", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: 700 }}>
                             Send

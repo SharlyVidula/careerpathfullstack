@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import apiClient from "../apiClient";
 import { useToast } from "./ToastContext";
+import theme from "../theme";
 
 export default function ResumeEnhancer() {
   const { addToast } = useToast();
@@ -57,11 +58,9 @@ export default function ResumeEnhancer() {
   return (
     <div
       style={{
-        background: "#111827",
-        padding: 20,
-        borderRadius: 12,
+        ...theme.glassPanel("20px"),
         marginTop: 20,
-        color: "white",
+        color: "var(--text-primary)",
       }}
     >
       <h3 style={{ marginBottom: 12 }}>AI Resume Analyzer</h3>
@@ -69,19 +68,15 @@ export default function ResumeEnhancer() {
       <input
         type="file"
         onChange={(e) => setFile(e.target.files?.[0] || null)}
-        style={{ marginTop: 8 }}
+        style={{ marginTop: 8, color: "var(--text-primary)" }}
       />
 
       <button
         onClick={uploadResume}
         disabled={loading}
         style={{
+          ...theme.button("secondary"),
           marginTop: 10,
-          padding: "8px 16px",
-          background: "#10b981",
-          borderRadius: 8,
-          border: "none",
-          cursor: "pointer",
           opacity: loading ? 0.7 : 1,
         }}
       >
@@ -94,8 +89,8 @@ export default function ResumeEnhancer() {
             marginTop: 12,
             padding: 10,
             borderRadius: 8,
-            background: "rgba(248,113,113,0.15)",
-            color: "#fecaca",
+            background: "rgba(239,68,68,0.1)",
+            color: "var(--danger)",
             fontSize: 14,
           }}
         >

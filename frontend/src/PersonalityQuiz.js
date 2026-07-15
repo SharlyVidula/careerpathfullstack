@@ -129,27 +129,28 @@ function PersonalityQuiz({ onComplete }) {
 }
 
 const styles = {
-  container: { marginTop: 20, textAlign: "center", color: "white" },
+  container: { marginTop: 20, textAlign: "center", color: "var(--text-primary)" },
   header: { fontSize: 20, marginBottom: 6 },
-  progress: { opacity: 0.8, marginBottom: 12 },
+  progress: { opacity: 0.8, marginBottom: 12, color: "var(--text-secondary)" },
   card: {
-    background: "rgba(255,255,255,0.06)",
+    background: "var(--card-item-bg)",
     padding: 18,
     borderRadius: 12,
     display: "inline-block",
     minWidth: 320,
-    border: "1px solid rgba(255,255,255,0.08)"
+    border: "1px solid var(--card-item-border)"
   },
   question: { fontSize: 16, marginBottom: 12 },
   answers: { display: "grid", gap: 10 },
   answerBtn: {
     padding: "10px 14px",
     borderRadius: 10,
-    border: "none",
+    border: "1px solid var(--card-item-border)",
     cursor: "pointer",
     fontSize: 14,
-    background: "linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))",
-    color: "white"
+    background: "var(--card-item-bg)",
+    color: "var(--text-primary)",
+    transition: "all 0.2s ease"
   }
 };
 
@@ -159,7 +160,7 @@ sheet.innerHTML = `
 .quiz-fade { animation: fadeQuiz 0.7s ease both; }
 @keyframes fadeQuiz { from {opacity:0; transform: translateY(10px)} to {opacity:1; transform:none} }
 .answer-anim { transition: .18s; }
-.answer-anim:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
+.answer-anim:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(99,102,241,0.15); border-color: var(--accent) !important; }
 `;
 document.head.appendChild(sheet);
 

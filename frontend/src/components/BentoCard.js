@@ -53,7 +53,7 @@ export default function BentoCard({
           left:          "10%",
           right:         "10%",
           height:        "1px",
-          background:    "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+          background:    "linear-gradient(90deg, transparent, var(--glass-border-top), transparent)",
           borderRadius:  "100%",
           pointerEvents: "none",
           zIndex:        2,

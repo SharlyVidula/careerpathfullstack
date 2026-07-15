@@ -201,41 +201,28 @@ const styles = {
     margin: "4px 0 0",
   },
   cardItem: {
-    background: "rgba(255,255,255,0.03)",
-    border: `1px solid ${theme.colors.border}`,
+    background: "var(--card-item-bg)",
+    border: `1px solid var(--card-item-border)`,
     borderRadius: theme.radii.md,
     padding: "20px",
     display: "flex",
     flexDirection: "column",
   },
   input: {
-    padding: "12px",
-    width: "100%",
-    borderRadius: "8px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "rgba(255,255,255,0.05)",
-    color: "white",
-    outline: "none",
-    fontSize: "14px",
-    transition: "all 0.2s ease"
+    ...theme.input(),
   },
   primaryBtn: {
     ...theme.button("primary"),
     flex: 1
   },
   ghostBtn: {
-    ...theme.button("ghost"),
+    ...theme.button("outline"),
     flex: 1,
-    background: "rgba(255,255,255,0.1)",
-    color: "white"
   },
   editBtn: {
-    ...theme.button("ghost"),
+    ...theme.button("outline"),
     padding: "6px 12px",
     fontSize: "12px",
-    background: "rgba(103, 232, 249, 0.1)",
-    color: "var(--accent)",
-    border: "1px solid var(--accent)",
     flex: 1
   },
   deleteBtn: {
@@ -243,7 +230,5 @@ const styles = {
     padding: "6px 12px",
     fontSize: "12px",
     flex: 1,
-    background: "#ef4444",
-    color: "white"
   }
 };

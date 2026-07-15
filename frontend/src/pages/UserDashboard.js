@@ -144,9 +144,9 @@ function UserDashboard() {
 
         {user.seekingRole && user.seekingRole !== "General Applicant" && (
           <div style={{ padding: "15px", background: "rgba(167, 139, 250, 0.15)", border: "1px solid rgba(167, 139, 250, 0.4)", borderRadius: "10px", marginBottom: "20px" }}>
-            🎉 You're selected as a <strong style={{ color: "#fff" }}>{user.seekingRole}</strong>
+            🎉 You're selected as a <strong style={{ color: "var(--text-primary)" }}>{user.seekingRole}</strong>
             <br />
-            and this is your ATS score to be that job role: <strong style={{ fontSize: "16px", color: "#34d399", marginLeft: "4px" }}>{user.atsScore || 85}%</strong>
+            and this is your ATS score to be that job role: <strong style={{ fontSize: "16px", color: "var(--success)", marginLeft: "4px" }}>{user.atsScore || 85}%</strong>
           </div>
         )}
 
@@ -158,7 +158,7 @@ function UserDashboard() {
           type="file"
           accept=".pdf"
           onChange={handleFileUpload}
-          style={{ color: "white" }}
+          style={{ color: "var(--text-primary)" }}
         />
 
         {uploading && <p style={{ color: "#a78bfa", marginTop: 10 }}>✨ AI is analyzing your resume...</p>}
@@ -176,14 +176,14 @@ function UserDashboard() {
             {displayJobs.map(job => (
               <div key={job._id} style={styles.jobCard}>
                 <div>
-                  <h4 style={{ margin: "0 0 5px 0", fontSize: "18px", color: "white" }}>{job.title}</h4>
-                  <span style={{ fontSize: "12px", color: "#34d399", fontWeight: "bold", background: "rgba(52, 211, 153, 0.1)", padding: "2px 8px", borderRadius: "4px" }}>
+                  <h4 style={{ margin: "0 0 5px 0", fontSize: "18px", color: "var(--text-primary)" }}>{job.title}</h4>
+                  <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: "bold", background: "rgba(16, 185, 129, 0.12)", padding: "2px 8px", borderRadius: "4px" }}>
                     {job.salary}
                   </span>
-                  <p style={{ color: "#aaa", fontSize: "13px", marginTop: "10px" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "10px" }}>
                     {job.employerId?.name} • {job.location}
                   </p>
-                  <p style={{ color: "#ddd", fontSize: "14px", marginTop: "10px", lineHeight: "1.4" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "10px", lineHeight: "1.4" }}>
                     {job.description}
                   </p>
                 </div>
@@ -222,7 +222,7 @@ function UserDashboard() {
             {requests.filter(r => r.status === 'PENDING_EMPLOYEE').map((req) => (
               <div key={req._id} style={styles.requestCard}>
                 <div>
-                  <h4 style={{ margin: "0 0 5px 0", color: "#fff" }}>
+                  <h4 style={{ margin: "0 0 5px 0", color: "var(--text-primary)" }}>
                     {req.employerId?.name || "A Recruiter"}
                   </h4>
                   <p style={{ margin: 0, color: theme.colors.textSecondary, fontSize: 14 }}>
@@ -249,7 +249,7 @@ function UserDashboard() {
             {requests.filter(r => r.status === 'ACCEPTED').map((req) => (
               <div key={req._id} style={styles.connectedCard}>
                 <div>
-                  <h4 style={{ margin: "0 0 5px 0", color: "#fff" }}>
+                  <h4 style={{ margin: "0 0 5px 0", color: "var(--text-primary)" }}>
                     {req.employerId?.name || "Company"}
                   </h4>
                   <p style={{ margin: "4px 0 0", color: theme.colors.textSecondary, fontSize: 14 }}>
@@ -335,7 +335,7 @@ const styles = {
     placeItems: "center",
     fontSize: "24px",
     fontWeight: 800,
-    color: "#041024",
+    color: "var(--btn-text)",
     boxShadow: theme.shadows.glow,
   },
   title: {
@@ -357,28 +357,28 @@ const styles = {
   },
   pill: {
     padding: "8px 12px",
-    background: "rgba(99,102,241,0.16)",
+    background: "rgba(99,102,241,0.12)",
     borderRadius: "999px",
-    border: "1px solid rgba(99,102,241,0.3)",
-    color: "#c7d2fe",
+    border: "1px solid rgba(99,102,241,0.25)",
+    color: "var(--accent)",
     fontSize: "12px",
     fontWeight: 700,
   },
   pillSecondary: {
     padding: "8px 12px",
-    background: "rgba(14,165,233,0.14)",
+    background: "var(--card-item-bg)",
     borderRadius: "999px",
-    border: "1px solid rgba(14,165,233,0.3)",
-    color: "#bae6fd",
+    border: "1px solid var(--card-item-border)",
+    color: "var(--text-secondary)",
     fontSize: "12px",
     fontWeight: 700,
   },
   pillSuccess: {
     padding: "8px 12px",
-    background: "rgba(34,197,94,0.16)",
+    background: "rgba(16,185,129,0.12)",
     borderRadius: "999px",
-    border: "1px solid rgba(34,197,94,0.35)",
-    color: "#bbf7d0",
+    border: "1px solid rgba(16,185,129,0.25)",
+    color: "var(--success)",
     fontSize: "12px",
     fontWeight: 700,
   },
@@ -392,8 +392,8 @@ const styles = {
     gap: 20
   },
   jobCard: {
-    background: "rgba(255, 255, 255, 0.03)",
-    border: `1px solid ${theme.colors.border}`,
+    background: "var(--card-item-bg)",
+    border: `1px solid var(--card-item-border)`,
     borderRadius: theme.radii.lg,
     padding: "20px",
     display: "flex",
@@ -402,19 +402,17 @@ const styles = {
     minHeight: "200px"
   },
   applyBtn: {
-    ...theme.button("primary"),
+    ...theme.button("secondary"),
     width: "100%",
     marginTop: 15,
-    background: "#34d399",
-    color: "#000"
   },
   requestCard: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "16px",
-    background: "rgba(255, 255, 255, 0.03)",
-    border: `1px solid ${theme.colors.border}`,
+    background: "var(--card-item-bg)",
+    border: `1px solid var(--card-item-border)`,
     borderRadius: theme.radii.md
   },
   connectedCard: {
@@ -422,8 +420,8 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "16px",
-    background: "rgba(34, 197, 94, 0.05)",
-    border: `1px solid rgba(34, 197, 94, 0.2)`,
+    background: "rgba(16, 185, 129, 0.04)",
+    border: `1px solid rgba(16, 185, 129, 0.15)`,
     borderRadius: theme.radii.md
   },
   btnGroup: {
@@ -431,19 +429,15 @@ const styles = {
     gap: 10
   },
   acceptBtn: {
-    ...theme.button("success"),
-    backgroundColor: "#22c55e",
-    backgroundImage: "none",
+    ...theme.button("secondary"),
   },
   denyBtn: {
     ...theme.button("danger"),
-    backgroundColor: "#ef4444",
-    backgroundImage: "none",
   },
   savedCard: {
     padding: "12px",
-    background: "rgba(255,255,255,0.03)",
-    border: `1px solid ${theme.colors.border}`,
+    background: "var(--card-item-bg)",
+    border: `1px solid var(--card-item-border)`,
     borderRadius: theme.radii.sm,
     display: "flex",
     justifyContent: "space-between",

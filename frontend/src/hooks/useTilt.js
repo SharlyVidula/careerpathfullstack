@@ -45,8 +45,8 @@ export default function useTilt(options = {}) {
           const pctY = (ay / rect.height) * 100;
           sheen.style.background =
             `radial-gradient(circle at ${pctX}% ${pctY}%, ` +
-            `rgba(255,255,255,0.14) 0%, ` +
-            `rgba(0,243,255,0.04) 40%, ` +
+            `rgba(255,255,255,0.12) 0%, ` +
+            `rgba(255,255,255,0.03) 40%, ` +
             `transparent 70%)`;
           sheen.style.opacity = "1";
         }

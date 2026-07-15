@@ -148,7 +148,7 @@ export default function GrowthTracker() {
           explanation: res.data.explanation,
         });
         setLogText("");
-        addToast("[ SUCCESS ] SYSTEM INTEGRITY UPDATED. PROGRESS SYNCED.", "success");
+        addToast("Progress updated and synchronized successfully.", "success");
 
         // ✅ refresh recent activity + streak after update
         await refreshHistoryAndStreak();
@@ -603,9 +603,9 @@ const styles = {
     width: "320px",
     height: "320px",
     borderRadius: "50%",
-    background: "rgba(0, 243, 255, 0.02)",
+    background: "rgba(99, 102, 241, 0.03)",
     border: "2px solid var(--border)",
-    boxShadow: "inset 0 0 35px rgba(0, 243, 255, 0.08)",
+    boxShadow: "inset 0 0 35px rgba(99, 102, 241, 0.06)",
   },
   radarSvg: {
     position: "absolute",
@@ -618,7 +618,6 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
-    fontFamily: "'Share Tech Mono', monospace",
   },
   radarLabel: {
     fontSize: "9px",
@@ -629,13 +628,11 @@ const styles = {
     fontSize: "24px",
     fontWeight: "900",
     color: "var(--accent)",
-    textShadow: "0 0 10px rgba(0, 243, 255, 0.7)",
     margin: "2px 0",
   },
   radarStatus: {
     fontSize: "9px",
     color: "var(--success)",
-    textShadow: "0 0 4px var(--success)",
   },
   terminalTrackers: {
     flex: 1,
@@ -649,14 +646,13 @@ const styles = {
     gap: "6px",
     padding: "10px 12px",
     borderRadius: "10px",
-    border: "1px solid rgba(255, 255, 255, 0.06)",
-    background: "rgba(0,0,0,0.25)",
+    border: "1px solid var(--card-item-border)",
+    background: "var(--card-item-bg)",
   },
   trackerHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    fontFamily: "'Share Tech Mono', monospace",
   },
   trackerName: {
     fontSize: "13px",
@@ -688,8 +684,8 @@ const styles = {
   },
 
   todoItem: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "var(--card-item-bg)",
+    border: "1px solid var(--card-item-border)",
     padding: "10px 12px",
     borderRadius: theme.radii.md,
     listStylePosition: "inside",
@@ -706,8 +702,8 @@ const styles = {
   },
 
   historyCard: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "var(--card-item-bg)",
+    border: "1px solid var(--card-item-border)",
     padding: "12px",
     borderRadius: theme.radii.md,
   },

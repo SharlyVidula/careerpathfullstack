@@ -10,6 +10,9 @@ const theme = {
     accentStrong: "var(--accent-strong)",
     success: "var(--success)",
     danger: "var(--danger)",
+    btnText: "var(--btn-text)",
+    cardItemBg: "var(--card-item-bg)",
+    cardItemBorder: "var(--card-item-border)",
   },
   gradients: {
     background: "var(--grad-bg)",
@@ -19,18 +22,18 @@ const theme = {
     danger: "var(--grad-danger)",
   },
   radii: {
-    xl: "24px",
-    lg: "18px",
-    md: "14px",
-    sm: "12px",
+    xl: "16px",
+    lg: "12px",
+    md: "8px",
+    sm: "6px",
   },
   shadows: {
-    soft: "0 18px 50px rgba(5, 12, 30, 0.45)",
-    glow: "0 12px 40px rgba(103, 232, 249, 0.25)",
-    inner: "inset 0 1px 0 rgba(255,255,255,0.06)",
+    soft: "0 10px 30px rgba(0, 0, 0, 0.15)",
+    glow: "0 8px 24px rgba(99, 102, 241, 0.12)",
+    inner: "inset 0 1px 0 rgba(255,255,255,0.05)",
   },
   blur: {
-    heavy: "18px",
+    heavy: "20px",
     medium: "12px",
   },
   spacing: {
@@ -41,14 +44,14 @@ const theme = {
     xl: "28px",
   },
   typography: {
-    fontFamily: "'Share Tech Mono', 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif",
-    headingWeight: 800,
+    fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
+    headingWeight: 700,
     bodyWeight: 500,
-    letter: "0.2px",
+    letter: "normal",
   },
   motion: {
     hover: "all 200ms ease",
-    card: "transform 320ms ease, box-shadow 320ms ease",
+    card: "transform 250ms ease, box-shadow 250ms ease",
   },
   glassPanel(padding = "20px") {
     return {
@@ -60,46 +63,48 @@ const theme = {
       backdropFilter: "blur(var(--glass-blur))",
       WebkitBackdropFilter: "blur(var(--glass-blur))",
       boxShadow: "var(--glass-shadow)",
-      transition: "box-shadow 0.32s ease, transform 0.32s ease, background 0.32s ease",
+      transition: "box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease",
     };
   },
   button(kind = "primary") {
-    // Gradient tokens are CSS variables — they flip automatically with light/dark mode
     const bgVar = {
       primary:   "var(--btn-grad-primary)",
       secondary: "var(--btn-grad-secondary)",
       danger:    "var(--btn-grad-danger)",
       ghost:     "transparent",
+      outline:   "transparent",
     };
     const textColor = {
       primary:   "var(--btn-text)",
       secondary: "var(--btn-text)",
       danger:    "var(--btn-text)",
       ghost:     "var(--accent)",
+      outline:   "var(--accent)",
     };
     const border = {
       primary:   "none",
       secondary: "none",
       danger:    "none",
       ghost:     "1px solid var(--btn-grad-ghost-border)",
+      outline:   "1px solid var(--btn-grad-ghost-border)",
     };
     return {
       backgroundImage: bgVar[kind]   || bgVar.primary,
       color:           textColor[kind] || textColor.primary,
       border:          border[kind]    || "none",
       borderRadius:    this.radii.md,
-      padding:         "12px 22px",
-      fontWeight:      700,
+      padding:         "10px 20px",
+      fontWeight:      600,
       letterSpacing:   this.typography.letter,
       cursor:          "pointer",
       fontSize:        "13px",
-      boxShadow:       "4px 4px 10px rgba(0,0,0,0.22), -2px -2px 8px rgba(255,255,255,0.04)",
+      transition:      "transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease",
     };
   },
   input() {
     return {
       width: "100%",
-      padding: "14px 16px",
+      padding: "12px 16px",
       borderRadius: this.radii.md,
       border: "1px solid var(--glass-border)",
       borderTopColor: "var(--glass-border-top)",
@@ -110,6 +115,7 @@ const theme = {
       boxShadow: "var(--glass-inset)",
       outline: "none",
       fontSize: "14px",
+      transition: "border-color 0.2s ease, box-shadow 0.2s ease",
     };
   },
 };

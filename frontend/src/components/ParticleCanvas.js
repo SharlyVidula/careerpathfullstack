@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
-const DARK_COLORS  = ["0,243,255",  "255,0,127",  "57,255,20"];   // cyan/magenta/green
-const LIGHT_COLORS = ["79,70,229",  "14,165,233", "5,150,105"];    // indigo/sky/emerald
+const DARK_COLORS  = ["99,102,241",  "124,58,237", "14,165,233"];   // indigo/violet/sky
+const LIGHT_COLORS = ["79,70,229",  "124,58,237", "14,165,233"];   // indigo/violet/sky
 
 const isLightMode = () => document.body.classList.contains("light-mode");
 
@@ -52,7 +52,7 @@ export default function ParticleCanvas() {
       ctx.clearRect(0, 0, W, H);
       const light = isLightMode();
       const lineAlphaBase = light ? 0.18 : 0.28;
-      const lineColor = light ? "99,102,241" : "0,243,255";
+      const lineColor = light ? "99,102,241" : "79,70,229";
 
       // ── Update positions ──────────────────────────────────────────
       for (const p of particles) {

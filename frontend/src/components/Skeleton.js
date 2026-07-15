@@ -7,10 +7,10 @@ export default function Skeleton({ width = '100%', height = '20px', borderRadius
                 width,
                 height,
                 borderRadius,
-                background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 75%)',
+                background: 'var(--shimmer-grad)',
                 backgroundSize: '400% 100%',
                 animation: 'skeletonShimmer 2s cubic-bezier(0.4, 0, 0.2, 1) infinite',
-                border: '1px solid rgba(255,255,255,0.03)',
+                border: '1px solid var(--shimmer-border)',
                 ...style
             }}
             {...props}

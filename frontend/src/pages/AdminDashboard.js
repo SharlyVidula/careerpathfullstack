@@ -203,11 +203,11 @@ export default function AdminDashboard() {
               <div key={req._id} style={styles.requestItem}>
                 <div style={{ flex: 1 }}>
                   <div style={styles.row}>
-                    <strong style={{color: "#fff"}}>Employer:</strong> 
+                    <strong style={{color: "var(--text-primary)"}}>Employer:</strong> 
                     <span style={{color: theme.colors.textSecondary}}> {req.employerId?.name}</span>
                   </div>
                   <div style={styles.row}>
-                    <strong style={{color: "#fff"}}>Candidate:</strong> 
+                    <strong style={{color: "var(--text-primary)"}}>Candidate:</strong> 
                     <span style={{color: theme.colors.textSecondary}}> {req.employeeId?.name}</span>
                   </div>
                   <div style={{fontSize: "12px", color: theme.colors.textSecondary, marginTop: 5}}>
@@ -260,10 +260,10 @@ const styles = {
   pillRow: { display: "flex", marginTop: theme.spacing.sm },
   pillDanger: {
     padding: "8px 12px",
-    background: "rgba(239,68,68,0.15)",
+    background: "rgba(239,68,68,0.12)",
     borderRadius: "999px",
-    border: "1px solid rgba(239,68,68,0.3)",
-    color: "#fca5a5",
+    border: "1px solid rgba(239,68,68,0.25)",
+    color: "var(--danger)",
     fontSize: "12px",
     fontWeight: 700,
   },
@@ -273,8 +273,8 @@ const styles = {
     gap: "15px"
   },
   requestItem: {
-    background: "rgba(255,255,255,0.03)",
-    border: `1px solid ${theme.colors.border}`,
+    background: "var(--card-item-bg)",
+    border: `1px solid var(--card-item-border)`,
     borderRadius: theme.radii.md,
     padding: "20px",
     display: "flex",
@@ -286,16 +286,12 @@ const styles = {
   row: { marginBottom: 4 },
   btnGroup: { display: "flex", gap: 10 },
   approveBtn: {
-    ...theme.button("success"),
-    backgroundColor: "#10b981",
-    backgroundImage: "none",
+    ...theme.button("secondary"),
     padding: "8px 16px",
     fontSize: "13px"
   },
   denyBtn: {
     ...theme.button("danger"),
-    backgroundColor: "#ef4444",
-    backgroundImage: "none",
     padding: "8px 16px",
     fontSize: "13px"
   }

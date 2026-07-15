@@ -74,7 +74,7 @@ export default function JDMatch() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
           <h2 style={{ ...styles.h2, margin: 0 }}>Resume Text</h2>
           <button
-            style={{ ...theme.button("ghost"), padding: "6px 12px", fontSize: "12px", background: "rgba(103, 232, 249, 0.1)", color: "var(--accent)", border: "1px solid var(--accent)" }}
+            style={{ ...theme.button("outline"), padding: "6px 12px", fontSize: "12px" }}
             onClick={() => {
               try {
                 const u = JSON.parse(localStorage.getItem("user") || "{}");
@@ -140,7 +140,7 @@ export default function JDMatch() {
 
       {result && (
         <>
-          <BentoCard colSpan={2} style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
+          <BentoCard colSpan={2} style={{ border: "1px solid var(--card-item-border)" }}>
             <h2 style={styles.h2}>Match Score</h2>
             <div style={{ ...styles.scoreBox, background: scoreColor }}>
               <div style={styles.scoreNum}>{result.matchScore}%</div>
@@ -285,7 +285,7 @@ const styles = {
     padding: 14,
     borderRadius: theme.radii.md,
     border: `1px solid ${theme.colors.border}`,
-    background: "rgba(255,255,255,0.03)",
+    background: "var(--card-item-bg)",
     color: theme.colors.textPrimary,
     outline: "none",
     resize: "vertical",
@@ -299,7 +299,7 @@ const styles = {
 
   scoreBox: {
     borderRadius: theme.radii.lg,
-    border: "1px solid rgba(255,255,255,0.10)",
+    border: "1px solid var(--card-item-border)",
     padding: 16,
     marginBottom: 10,
     display: "grid",
@@ -311,8 +311,8 @@ const styles = {
 
   list: { margin: 0, paddingLeft: 18, color: theme.colors.textSecondary, display: "grid", gap: 8 },
   li: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "var(--card-item-bg)",
+    border: "1px solid var(--card-item-border)",
     padding: "10px 12px",
     borderRadius: theme.radii.md,
     listStylePosition: "inside",
@@ -322,8 +322,8 @@ const styles = {
   chip: {
     padding: "8px 10px",
     borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.03)",
+    border: "1px solid var(--card-item-border)",
+    background: "var(--card-item-bg)",
     color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: 700,

@@ -271,7 +271,7 @@ export default function EmployerDashboard() {
               <div key={job._id} style={styles.candidateCard}>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <h4 style={{ margin: "0 0 5px 0", color: "white", paddingRight: "10px" }}>{job.title}</h4>
+                    <h4 style={{ margin: "0 0 5px 0", color: "var(--text-primary)", paddingRight: "10px" }}>{job.title}</h4>
                     <button 
                       onClick={() => handleRemoveJob(job._id)} 
                       style={styles.deleteBtn} 
@@ -281,16 +281,16 @@ export default function EmployerDashboard() {
                       ✕
                     </button>
                   </div>
-                  <span style={{ fontSize: "12px", color: job.status === "approved" ? "#34d399" : "#fbbf24", fontWeight: "bold", background: job.status === "approved" ? "rgba(52, 211, 153, 0.1)" : "rgba(251, 191, 36, 0.2)", padding: "2px 8px", borderRadius: "4px" }}>
+                  <span style={{ fontSize: "12px", color: job.status === "approved" ? "var(--success)" : "#e2b714", fontWeight: "bold", background: job.status === "approved" ? "rgba(16, 185, 129, 0.12)" : "rgba(226, 183, 20, 0.15)", padding: "2px 8px", borderRadius: "4px" }}>
                     {job.status.toUpperCase()}
                   </span>
-                  <p style={{ color: "#aaa", fontSize: "13px", marginTop: "10px" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "10px" }}>
                     {job.location} • {job.salary}
                   </p>
                 </div>
-                <div style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                  <strong style={{ color: "#34d399", fontSize: "24px" }}>{job.applyClicks || 0}</strong>
-                  <span style={{ color: "#888", fontSize: "13px", marginLeft: "8px" }}>Applies / Clicks</span>
+                <div style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid var(--border)" }}>
+                  <strong style={{ color: "var(--success)", fontSize: "24px" }}>{job.applyClicks || 0}</strong>
+                  <span style={{ color: "var(--text-secondary)", fontSize: "13px", marginLeft: "8px" }}>Applies / Clicks</span>
                 </div>
               </div>
             ))}
@@ -342,7 +342,7 @@ export default function EmployerDashboard() {
                   <div 
                     style={{ ...styles.avatar, cursor: "pointer", border: "2px solid transparent", transition: "border-color 0.2s" }}
                     onClick={() => setCandidateModal({ show: true, candidate: c })}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = "#a78bfa"}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--accent)"}
                     onMouseLeave={(e) => e.currentTarget.style.borderColor = "transparent"}
                     title="View Full Profile"
                   >
@@ -354,9 +354,9 @@ export default function EmployerDashboard() {
                     {c.seekingRole ? (
                       <span style={styles.roleTag}>{c.seekingRole}</span>
                     ) : (
-                      <span style={{ ...styles.roleTag, background: "#333", color: "#888" }}>General Applicant</span>
+                      <span style={{ ...styles.roleTag, background: "var(--card-item-bg)", color: "var(--text-secondary)" }}>General Applicant</span>
                     )}
-                    {c.atsScore > 0 && <span style={{ ...styles.roleTag, background: "#10b981", color: "#000" }}>ATS: {c.atsScore}%</span>}
+                    {c.atsScore > 0 && <span style={{ ...styles.roleTag, background: "rgba(16, 185, 129, 0.12)", color: "var(--success)", border: "1px solid rgba(16, 185, 129, 0.25)" }}>ATS: {c.atsScore}%</span>}
                   </div>
 
                   <p style={{ margin: "10px 0 0", color: theme.colors.textSecondary, fontSize: 13 }}>📧 {c.email}</p>
@@ -367,7 +367,7 @@ export default function EmployerDashboard() {
                       <strong style={{ fontSize: "12px", color: theme.colors.textPrimary }}>Key Skills:</strong>
                       <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "4px" }}>
                         {c.skills.slice(0, 4).map((skill, idx) => (
-                          <span key={idx} style={{ fontSize: "11px", color: theme.colors.textSecondary, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", padding: "2px 6px" }}>{skill}</span>
+                          <span key={idx} style={{ fontSize: "11px", color: "var(--text-secondary)", background: "var(--card-item-bg)", border: "1px solid var(--card-item-border)", borderRadius: "4px", padding: "2px 6px" }}>{skill}</span>
                         ))}
                       </div>
                     </div>
@@ -428,35 +428,19 @@ const styles = {
   },
   pillSecondary: {
     padding: "8px 12px",
-    background: "rgba(14,165,233,0.14)",
+    background: "var(--card-item-bg)",
     borderRadius: "999px",
-    border: "1px solid rgba(14,165,233,0.3)",
-    color: "#bae6fd",
+    border: "1px solid var(--card-item-border)",
+    color: "var(--text-secondary)",
     fontSize: "12px",
     fontWeight: 700,
   },
   searchInput: {
-    padding: "12px 16px",
-    width: "100%",
+    ...theme.input(),
     maxWidth: "400px",
-    borderRadius: "8px",
-    border: "1px solid rgba(255,255,255,0.2)",
-    background: "rgba(0,0,0,0.3)",
-    color: "white",
-    outline: "none",
-    fontSize: "15px",
-    transition: "all 0.2s ease"
   },
   input: {
-    padding: "12px",
-    width: "100%",
-    borderRadius: "8px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "rgba(255,255,255,0.05)",
-    color: "white",
-    outline: "none",
-    fontSize: "14px",
-    transition: "all 0.2s ease"
+    ...theme.input(),
   },
   formGrid: {
     display: 'flex',
@@ -470,8 +454,8 @@ const styles = {
     gap: 20
   },
   candidateCard: {
-    background: "rgba(255, 255, 255, 0.03)",
-    border: `1px solid ${theme.colors.border}`,
+    background: "var(--card-item-bg)",
+    border: `1px solid var(--card-item-border)`,
     borderRadius: theme.radii.lg,
     padding: "20px",
     display: "flex",
@@ -488,13 +472,14 @@ const styles = {
     display: "grid",
     placeItems: "center",
     fontWeight: 700,
-    color: "#0b1224"
+    color: "var(--btn-text)"
   },
   roleTag: {
     display: "inline-block",
     fontSize: "11px",
-    background: "#a78bfa",
-    color: "#000",
+    background: "rgba(99, 102, 241, 0.12)",
+    color: "var(--accent)",
+    border: "1px solid rgba(99, 102, 241, 0.25)",
     padding: "4px 8px",
     borderRadius: "4px",
     fontWeight: "bold",
@@ -506,8 +491,7 @@ const styles = {
     marginTop: 15
   },
   postBtn: {
-    ...theme.button("primary"),
-    background: "#34d399", // Green for posting
+    ...theme.button("secondary"),
     width: "100%",
     marginTop: 10
   },
@@ -547,14 +531,9 @@ const styles = {
     boxShadow: "0 10px 40px rgba(0,0,0,0.5)"
   },
   cancelBtn: {
-    ...theme.button("ghost"),
-    background: "rgba(255,255,255,0.05)",
-    color: "var(--text-primary)"
+    ...theme.button("outline"),
   },
   confirmDeleteBtn: {
     ...theme.button("danger"),
-    background: "#ef4444",
-    color: "#fff",
-    backgroundImage: "none"
   }
 };
