@@ -115,13 +115,13 @@ router.post("/upload-resume", upload.single("resume"), async (req, res) => {
     } else {
       // ⚠️ ENHANCED MOCK LOGIC ⚠️
 
-      // --- CULINARY / CHEF ---
-      if (text.includes("chef") || text.includes("culinary") || text.includes("kitchen") || text.includes("cooking") || text.includes("sous") || text.includes("food") || text.includes("restaurant") || text.includes("catering")) {
-        aiRole = "Chef / Culinary Expert";
+      // --- CULINARY / CHEF / HOSPITALITY ---
+      if (text.includes("chef") || text.includes("culinary") || text.includes("kitchen") || text.includes("cooking") || text.includes("sous") || text.includes("food") || text.includes("restaurant") || text.includes("catering") || text.includes("hotel") || text.includes("hospitality") || text.includes("tourism") || text.includes("housekeeping") || text.includes("receptionist")) {
+        aiRole = "Chef / Hospitality Specialist";
         atsScore = 85 + Math.floor(Math.random() * 10);
       }
       // --- IT / TECH ---
-      else if (text.includes("react") || text.includes("angular") || text.includes("frontend") || text.includes("ui") || text.includes("web")) {
+      else if (text.includes("react") || text.includes("angular") || text.includes("frontend") || /\bui\b/i.test(text) || text.includes("web")) {
         aiRole = "UI Engineer";
         atsScore = 88 + Math.floor(Math.random() * 8);
       }
@@ -129,21 +129,21 @@ router.post("/upload-resume", upload.single("resume"), async (req, res) => {
         aiRole = "Data Scientist";
         atsScore = 86 + Math.floor(Math.random() * 9);
       }
-      else if (text.includes("java") || text.includes("node") || text.includes("backend") || text.includes("api") || text.includes("aws")) {
+      else if (text.includes("java") || text.includes("node") || text.includes("backend") || /\bapi\b/i.test(text) || /\baws\b/i.test(text)) {
         aiRole = "Backend Engineer";
         atsScore = 87 + Math.floor(Math.random() * 10);
       }
-      else if (text.includes("flutter") || text.includes("swift") || text.includes("android") || text.includes("ios") || text.includes("mobile")) {
+      else if (text.includes("flutter") || text.includes("swift") || text.includes("android") || /\bios\b/i.test(text) || text.includes("mobile")) {
         aiRole = "Mobile Developer";
         atsScore = 85 + Math.floor(Math.random() * 12);
       }
 
       // --- BUSINESS ---
-      else if (text.includes("marketing") || text.includes("seo") || text.includes("brand") || text.includes("sales") || text.includes("customer")) {
+      else if (text.includes("marketing") || /\bseo\b/i.test(text) || text.includes("brand") || text.includes("sales") || text.includes("customer")) {
         aiRole = "Marketing Specialist";
         atsScore = 89 + Math.floor(Math.random() * 8);
       }
-      else if (text.includes("accounting") || text.includes("finance") || text.includes("audit") || text.includes("tax") || text.includes("bank")) {
+      else if (text.includes("accounting") || text.includes("finance") || text.includes("audit") || /\btax\b|\btaxes\b|\btaxation\b/i.test(text) || text.includes("bank")) {
         aiRole = "Accountant";
         atsScore = 86 + Math.floor(Math.random() * 10);
       }
