@@ -296,4 +296,290 @@ router.get("/streak", async (req, res) => {
   }
 });
 
+// ==========================================
+// 🧠 GAMIFIED AI QUIZZES & IQ ASSESSMENT API
+// ==========================================
+const QUIZ_BANKS = require("../data/quizData");
+const User = require("../models/user");
+
+async function generateAIQuiz(category, targetContext) {
+  try {
+    let prompt = "";
+    if (category === "IQ") {
+      prompt = `Generate 4 multiple-choice IQ/Logic and analytical reasoning questions for university IT students. Return ONLY a valid JSON array of objects with keys: "id" (string), "question" (string), "options" (array of 4 strings), "correct" (number 0-3), "explanation" (string explaining why the correct option is right). No markdown or extra text.`;
+    } else if (category === "SE") {
+      prompt = `Generate 4 multiple-choice Software Engineering questions tailored specifically for a student at level: ${targetContext}. Questions should test software concepts, coding logic, and software engineering best practices for this level. Return ONLY a valid JSON array of objects with keys: "id" (string), "question" (string), "options" (array of 4 strings), "correct" (number 0-3), "explanation" (string). No markdown or extra text.`;
+    } else if (category === "JLPT") {
+      prompt = `Generate 4 multiple-choice Japanese language questions tailored for JLPT Level: ${targetContext}. Include Romaji or English translations where appropriate, testing Kanji, vocabulary, particles, and workplace expressions. Return ONLY a valid JSON array of objects with keys: "id" (string), "question" (string), "options" (array of 4 strings), "correct" (number 0-3), "explanation" (string). No markdown or extra text.`;
+    }
+
+    if (process.env.GROQ_API_KEY) {
+      const resp = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 1000
+      });
+      const rawText = resp.choices?.[0]?.message?.content || "";
+      const jsonStr = extractJson(rawText);
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn("AI Quiz Generation Warning (falling back to curated bank):", err.message);
+  }
+  return null;
+}
+
+/**
+ * GET /api/growth/quiz/questions?userId=...&category=IQ|SE|JLPT
+ */
+router.get("/quiz/questions", async (req, res) => {
+  try {
+    const { userId, category } = req.query;
+    let bankKey = "IQ";
+    let targetContext = "General Logic & IQ";
+
+    const user = await User.findById(userId);
+
+    if (category === "SE") {
+      const stage = user?.studentStage || "YEAR_1_2";
+      if (stage === "FINAL_YEAR_JOB") {
+        bankKey = "SE_FINAL_YEAR_JOB";
+        targetContext = "4th Year / Final Year (Microservices, DevOps, System Scalability)";
+      } else if (stage === "YEAR_3_INTERN") {
+        bankKey = "SE_YEAR_3_INTERN";
+        targetContext = "3rd Year (Advanced Algorithms, REST APIs, SQL Indexing)";
+      } else {
+        bankKey = "SE_YEAR_1_2";
+        targetContext = "1st/2nd Year (Data Structures, OOP, Git, JS)";
+      }
+    } else if (category === "JLPT") {
+      const jlpt = user?.jlptLevel || "N4";
+      bankKey = `JLPT_${jlpt}`;
+      targetContext = `JLPT ${jlpt}`;
+    }
+
+    // Try generating fresh AI quiz first
+    const aiQuestions = await generateAIQuiz(category, targetContext);
+    if (aiQuestions) {
+      return res.json({ ok: true, source: "🤖 AI Real-Time Generated", bankKey: `${category} (${targetContext})`, questions: aiQuestions });
+    }
+
+    // Fallback to static curated quiz bank
+    const questions = QUIZ_BANKS[bankKey] || QUIZ_BANKS.IQ;
+    res.json({ ok: true, source: "📚 Curated Question Bank", bankKey, questions });
+  } catch (err) {
+    console.error("Quiz questions error:", err);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+/**
+ * POST /api/growth/quiz/submit
+ */
+router.post("/quiz/submit", async (req, res) => {
+  try {
+    const { userId, category, score, totalQuestions } = req.body;
+    if (!userId) return res.status(400).json({ ok: false, message: "userId is required" });
+
+    let doc = await GrowthProgress.findOne({ userId });
+    if (!doc) {
+      doc = new GrowthProgress({ userId, progress: defaultState().progress, todos: defaultState().todos });
+    }
+
+    // Boost skills & academic progress
+    const pctAdd = Math.round((score / (totalQuestions || 1)) * 10); // up to +10% boost
+    doc.progress.skills = Math.min(100, (doc.progress.skills || 0) + pctAdd);
+    doc.progress.academic = Math.min(100, (doc.progress.academic || 0) + pctAdd);
+    doc.progress.industry = Math.min(100, (doc.progress.industry || 0) + Math.round(pctAdd / 2));
+
+    // Save completion entry in history
+    doc.history = doc.history || [];
+    doc.history.unshift({
+      text: `🏆 Completed ${category} Quiz (${score}/${totalQuestions} Correct, +${pctAdd}% Growth Score)`,
+      createdAt: new Date()
+    });
+
+    await doc.save();
+
+    // Also update user's atsScore/growthScore in User model
+    const user = await User.findById(userId);
+    if (user) {
+      user.atsScore = Math.min(98, (user.atsScore || 65) + pctAdd);
+      await user.save();
+    }
+
+    res.json({
+      ok: true,
+      message: `🎉 Quiz completed! Scored ${score}/${totalQuestions}. Performance Index boosted by +${pctAdd}%!`,
+      progress: doc.progress,
+      atsScore: user?.atsScore || 75
+    });
+  } catch (err) {
+    console.error("Quiz submit error:", err);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+// ==========================================
+// 🏆 STUDENT LEADERBOARD & COORDINATOR MONITORING API
+// ==========================================
+
+/**
+ * GET /api/growth/leaderboard?userId=...
+ * Returns University-wide & Batch leaderboards based on weekly scores & progress
+ */
+router.get("/leaderboard", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const currentUser = userId ? await User.findById(userId) : null;
+    const userBatch = currentUser?.batchNumber || "SE1";
+
+    // Fetch all active students
+    const students = await User.find({ role: { $in: ["student", "user"] } }).select("name email batchNumber degreeBatch studentStage atsScore profilePic").lean();
+    const studentIds = students.map(s => s._id);
+
+    // Fetch growth progress docs for all students
+    const growthDocs = await GrowthProgress.find({ userId: { $in: studentIds } }).lean();
+    const growthMap = {};
+    growthDocs.forEach(g => {
+      growthMap[g.userId.toString()] = g;
+    });
+
+    // Compute weekly composite score for each student
+    const rankedStudents = students.map(s => {
+      const g = growthMap[s._id.toString()] || {};
+      const prog = g.progress || {};
+      const totalProg = Math.round(((prog.academic || 0) + (prog.industry || 0) + (prog.skills || 0) + (prog.certifications || 0) + (prog.networking || 0)) / 5);
+      
+      // Calculate weekly score combining ATS score, growth progress, and quiz history
+      const weeklyScore = Math.max(totalProg, (g.weeklyScore || 0) + (s.atsScore || 60));
+
+      return {
+        _id: s._id,
+        name: s.name,
+        email: s.email,
+        batchNumber: s.batchNumber || "SE1",
+        degreeBatch: s.degreeBatch || "UGC (SE)",
+        studentStage: s.studentStage || "YEAR_1_2",
+        profilePic: s.profilePic,
+        weeklyScore,
+        totalProgress: totalProg
+      };
+    });
+
+    // Sort by weeklyScore descending
+    rankedStudents.sort((a, b) => b.weeklyScore - a.weeklyScore);
+
+    // Add rank positions
+    rankedStudents.forEach((s, idx) => {
+      s.universityRank = idx + 1;
+    });
+
+    // Top 10 University-Wide
+    const universityTop10 = rankedStudents.slice(0, 10);
+
+    // Batch Rankings for current user's batch
+    const batchStudents = rankedStudents.filter(s => s.batchNumber === userBatch);
+    batchStudents.forEach((s, idx) => {
+      s.batchRank = idx + 1;
+    });
+    const batchTop10 = batchStudents.slice(0, 10);
+
+    // Current user ranking details
+    let myUniversityRank = null;
+    let myBatchRank = null;
+    if (currentUser) {
+      const myUniv = rankedStudents.find(s => s._id.toString() === currentUser._id.toString());
+      if (myUniv) myUniversityRank = myUniv.universityRank;
+
+      const myBat = batchStudents.find(s => s._id.toString() === currentUser._id.toString());
+      if (myBat) myBatchRank = myBat.batchRank;
+    }
+
+    return res.json({
+      ok: true,
+      userBatch,
+      myUniversityRank,
+      myBatchRank,
+      totalStudents: rankedStudents.length,
+      universityLeaderboard: universityTop10,
+      batchLeaderboard: batchTop10
+    });
+  } catch (err) {
+    console.error("Leaderboard error:", err);
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+/**
+ * GET /api/growth/coordinator-monitoring
+ * Returns full student engagement telemetry, skills developed, and motivation levels for Coordinators
+ */
+router.get("/coordinator-monitoring", async (req, res) => {
+  try {
+    const students = await User.find({ role: { $in: ["student", "user"] } }).select("name email indexNumber batchNumber degreeBatch studentStage atsScore githubEvaluation").lean();
+    const studentIds = students.map(s => s._id);
+
+    const growthDocs = await GrowthProgress.find({ userId: { $in: studentIds } }).lean();
+    const growthMap = {};
+    growthDocs.forEach(g => {
+      growthMap[g.userId.toString()] = g;
+    });
+
+    const monitoringData = students.map(s => {
+      const g = growthMap[s._id.toString()] || {};
+      const history = g.history || [];
+      const prog = g.progress || {};
+      const totalProg = Math.round(((prog.academic || 0) + (prog.industry || 0) + (prog.skills || 0) + (prog.certifications || 0) + (prog.networking || 0)) / 5);
+
+      // Determine motivation status
+      const logCount = history.length;
+      let motivationStatus = "💤 Low Activity";
+      let motivationBadge = "warning";
+      if (logCount >= 5 || totalProg >= 60) {
+        motivationStatus = "🔥 High Motivation";
+        motivationBadge = "success";
+      } else if (logCount >= 2 || totalProg >= 30) {
+        motivationStatus = "⚡ Active Progress";
+        motivationBadge = "info";
+      }
+
+      // Combine AI-detected skills + manual skills
+      const ghSkills = s.githubEvaluation?.detectedSkills || [];
+      const devSkills = g.developedSkills || [];
+      const allSkills = [...new Set([...ghSkills, ...devSkills])];
+
+      return {
+        _id: s._id,
+        name: s.name,
+        email: s.email,
+        indexNumber: s.indexNumber || "N/A",
+        batchNumber: s.batchNumber || "SE1",
+        degreeBatch: s.degreeBatch || "UGC (SE)",
+        studentStage: s.studentStage || "YEAR_1_2",
+        totalProgress: totalProg,
+        atsScore: s.atsScore || 65,
+        weeklyLogsCount: logCount,
+        motivationStatus,
+        motivationBadge,
+        developedSkills: allSkills.length > 0 ? allSkills : ["Software Fundamentals"],
+        lastActive: g.updatedAt || s.updatedAt || new Date()
+      };
+    });
+
+    return res.json({
+      ok: true,
+      totalStudents: monitoringData.length,
+      students: monitoringData
+    });
+  } catch (err) {
+    console.error("Coordinator monitoring error:", err);
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
 module.exports = router;

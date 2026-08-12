@@ -30,9 +30,9 @@ export default function OAuthCallback() {
         addToast("Successfully logged in with OAuth!", "success");
 
         const role = decodedPayload.role;
-        if (role === "admin") {
+        if (role === "admin" || role === "coordinator") {
           navigate("/admin");
-        } else if (role === "employer") {
+        } else if (role === "employer" || role === "supervisor") {
           navigate("/employer-dashboard");
         } else {
           navigate("/user-dashboard");

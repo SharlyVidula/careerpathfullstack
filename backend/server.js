@@ -109,28 +109,28 @@ const connectWithRetry = async () => {
       {
         name: "LNBTI Academic Coordinator",
         email: "coordinator@lnbti.edu.lk",
-        password: "coordinator123",
+        password: "Password123!",
         role: "coordinator",
         isApproved: true,
         approvalStatus: "APPROVED"
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    console.log("🎓 Default Coordinator account ready: coordinator@lnbti.edu.lk / coordinator123");
+    console.log("🎓 Default Coordinator account ready: coordinator@lnbti.edu.lk / Password123!");
 
     await User.findOneAndUpdate(
       { email: "admin@lnbti.edu.lk" },
       {
         name: "LNBTI System Administrator",
         email: "admin@lnbti.edu.lk",
-        password: "admin123",
+        password: "Password123!",
         role: "admin",
         isApproved: true,
         approvalStatus: "APPROVED"
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    console.log("👑 Default Admin account ready: admin@lnbti.edu.lk / admin123");
+    console.log("👑 Default Admin account ready: admin@lnbti.edu.lk / Password123!");
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err.message);
     console.log("🔄 Retrying MongoDB connection in 5 seconds...");

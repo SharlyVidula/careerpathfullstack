@@ -87,33 +87,39 @@ const linkedinStrategy = new LinkedInStrategy(
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "dummy",
     callbackURL: process.env.LINKEDIN_CALLBACK_URL || "http://localhost:5000/api/auth/linkedin/callback",
     scope: ["openid", "profile", "email"],
-    state: true,
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ linkedinId: profile.id });
       let email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
 
-      if (!user) {
+      if (!user && email) {
         user = await User.findOne({ email });
-        if (user) {
-          user.linkedinId = profile.id;
-          user.linkedinData = profile._json; // Store all raw data
-          await user.save();
-        } else {
-          user = new User({
-            name: profile.displayName,
-            email: email,
-            linkedinId: profile.id,
-            profilePic: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
-            linkedinData: profile._json, // Store all raw data from LinkedIn
-          });
-          await user.save();
+      }
+
+      const profilePicUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
+      const computedProfileUrl = profilePicUrl || `https://linkedin.com/in/${(profile.displayName || "user").toLowerCase().replace(/\s+/g, '-')}`;
+
+      if (user) {
+        user.linkedinId = profile.id;
+        user.linkedinData = profile._json;
+        user.linkedinProfileUrl = user.linkedinProfileUrl || computedProfileUrl;
+        if (profilePicUrl) {
+          user.profilePic = profilePicUrl;
         }
+        user.linkedinLocked = true;
+        await user.save();
       } else {
-         // update linkedin data on every login
-         user.linkedinData = profile._json;
-         await user.save();
+        user = new User({
+          name: profile.displayName || "LinkedIn User",
+          email: email || `linkedin_${profile.id}@lnbti.edu.lk`,
+          linkedinId: profile.id,
+          profilePic: profilePicUrl,
+          linkedinProfileUrl: computedProfileUrl,
+          linkedinLocked: true,
+          linkedinData: profile._json,
+        });
+        await user.save();
       }
       return done(null, user);
     } catch (err) {

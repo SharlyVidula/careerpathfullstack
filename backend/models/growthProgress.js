@@ -15,6 +15,10 @@ const growthProgressSchema = new mongoose.Schema(
 
     todos: { type: [String], default: [] },
 
+    weeklyScore: { type: Number, default: 0 },
+    weeklyResetDate: { type: Date, default: Date.now },
+    developedSkills: { type: [String], default: [] },
+
     lastLog: { type: String, default: "" },
     lastExplanation: { type: String, default: "" },
 

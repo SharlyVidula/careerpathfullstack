@@ -8,6 +8,7 @@ import { useToast } from "../components/ToastContext";
 import BentoCard from "../components/BentoCard";
 import InternProgramModal from "../components/InternProgramModal";
 import InternEligibilityPortalModal from "../components/InternEligibilityPortalModal";
+import StudentLeaderboard from "../components/StudentLeaderboard";
 
 
 function UserDashboard() {
@@ -24,10 +25,39 @@ function UserDashboard() {
 
   const [ghUsername, setGhUsername] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [linkedinData, setLinkedinData] = useState(null);
+  const [linkedinInput, setLinkedinInput] = useState("");
+  const [linkingLinkedin, setLinkingLinkedin] = useState(false);
   const [ghRepos, setGhRepos] = useState([]);
   const [ghEval, setGhEval] = useState(null);
   const [syncingGh, setSyncingGh] = useState(false);
   const [manualTodoChecked, setManualTodoChecked] = useState(false);
+
+  const handleConnectLinkedin = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!linkedinInput) {
+      addToast("Please enter a valid LinkedIn Profile URL", "warning");
+      return;
+    }
+    setLinkingLinkedin(true);
+    try {
+      const res = await apiClient.post("/github/connect-linkedin", {
+        userId: user.id || user._id,
+        linkedinProfileUrl: linkedinInput
+      });
+      if (res.data?.ok) {
+        addToast(res.data.message, "success");
+        setLinkedinUrl(res.data.linkedinProfileUrl);
+        setLinkedinData(res.data.linkedinData);
+        setLinkedinInput("");
+        fetchDashboardData(user.id || user._id);
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || "Failed to connect LinkedIn", "error");
+    } finally {
+      setLinkingLinkedin(false);
+    }
+  };
 
   useEffect(() => {
     // 1. Check Login
@@ -37,6 +67,14 @@ function UserDashboard() {
       return;
     }
     const parsedUser = JSON.parse(data);
+    if (parsedUser.role === "employer" || parsedUser.role === "supervisor") {
+      navigate("/employer-dashboard");
+      return;
+    }
+    if (parsedUser.role === "admin" || parsedUser.role === "coordinator") {
+      navigate("/admin");
+      return;
+    }
     setUser(parsedUser);
 
     // OAuth Callback Notifications
@@ -65,19 +103,21 @@ function UserDashboard() {
       const jobsRes = await apiClient.get("/users/jobs");
       setJobs(jobsRes.data.jobs || []);
 
-      // 🎓 Fetch Internship Eligibility & Stage from Backend database
+      // 🎓 Fetch Internship Eligibility, Stage & Assigned Supervisor from Backend database
       try {
         const eligRes = await apiClient.get(`/intern/eligibility/${userId}`);
         if (eligRes.data?.ok) {
           const backendStatus = eligRes.data.eligibility?.eligibilityStatus || "NOT_SUBMITTED";
           const backendStage = eligRes.data.userStage || "YEAR_1_2";
+          const backendSupervisor = eligRes.data.assignedSupervisor || null;
 
           setUser(prevUser => {
             if (!prevUser) return prevUser;
             const updatedUser = {
               ...prevUser,
               eligibilityStatus: backendStatus,
-              studentStage: backendStage
+              studentStage: backendStage,
+              assignedSupervisor: backendSupervisor
             };
             localStorage.setItem("user", JSON.stringify(updatedUser));
             return updatedUser;
@@ -87,13 +127,28 @@ function UserDashboard() {
         console.error("Error syncing eligibility status:", eligErr);
       }
 
-      // 🐙 Fetch GitHub & LinkedIn Connected Account Portfolio
+      // 🐙 Fetch GitHub & LinkedIn Connected Account Portfolio Telemetry
       const ghRes = await apiClient.get(`/github/portfolio?userId=${userId}`);
       if (ghRes.data?.ok) {
         setGhUsername(ghRes.data.githubUsername || "");
         setLinkedinUrl(ghRes.data.linkedinProfileUrl || "");
+        setLinkedinData(ghRes.data.linkedinData || null);
         setGhRepos(ghRes.data.githubRepos || []);
         setGhEval(ghRes.data.githubEvaluation || null);
+
+        setUser(prevUser => {
+          if (!prevUser) return prevUser;
+          const updatedUser = {
+            ...prevUser,
+            githubUsername: ghRes.data.githubUsername || prevUser.githubUsername,
+            linkedinProfileUrl: ghRes.data.linkedinProfileUrl || prevUser.linkedinProfileUrl,
+            linkedinData: ghRes.data.linkedinData || prevUser.linkedinData,
+            profilePic: ghRes.data.profilePic || prevUser.profilePic,
+            linkedinLocked: !!(ghRes.data.linkedinProfileUrl || prevUser.linkedinProfileUrl)
+          };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          return updatedUser;
+        });
       }
 
     } catch (e) {
@@ -207,7 +262,7 @@ function UserDashboard() {
           </div>
 
           <div style={styles.actionRow}>
-            {user?.eligibilityStatus === "APPROVED" ? (
+            {stage === "YEAR_3_INTERN" && user?.eligibilityStatus === "APPROVED" && (
               <button
                 onClick={() => setShowInternModal(true)}
                 style={{
@@ -220,14 +275,13 @@ function UserDashboard() {
               >
                 🎓 Intern Program
               </button>
-            ) : (
+            )}
+            {stage === "YEAR_3_INTERN" && user?.eligibilityStatus !== "APPROVED" && (
               <button
                 onClick={() => setShowEligibilityModal(true)}
                 style={{
                   ...styles.growthBtn,
-                  background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-                  border: "1px solid rgba(99, 102, 241, 0.5)",
-                  boxShadow: "0 4px 14px rgba(99, 102, 241, 0.3)"
+                  background: "linear-gradient(135deg, #4f46e5, #6366f1)"
                 }}
                 className="button-hover"
               >
@@ -265,7 +319,7 @@ function UserDashboard() {
         </div>
       </BentoCard>
 
-      {/* STAGE GUIDANCE BANNER */}
+      {/* STAGE 1 GUIDANCE BANNER */}
       {stage === "YEAR_1_2" && (
         <BentoCard colSpan={4} padding="20px">
           <div style={{ background: "rgba(99, 102, 241, 0.08)", border: "1px solid rgba(99, 102, 241, 0.25)", padding: "16px", borderRadius: "12px" }}>
@@ -278,49 +332,63 @@ function UserDashboard() {
         </BentoCard>
       )}
 
-      {/* INTERNSHIP ELIGIBILITY & INTERN PROGRAM BANNER */}
-      <BentoCard colSpan={4} padding="20px">
-        <div style={{ background: user?.eligibilityStatus === "APPROVED" ? "linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(16, 185, 129, 0.12))" : "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(234, 179, 8, 0.12))", border: `1px solid ${user?.eligibilityStatus === "APPROVED" ? "rgba(34, 197, 94, 0.4)" : "rgba(99, 102, 241, 0.4)"}`, padding: "18px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <div>
-            <h4 style={{ color: user?.eligibilityStatus === "APPROVED" ? "#22c55e" : "#818cf8", margin: "0 0 6px 0", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-              {user?.eligibilityStatus === "APPROVED" ? "🎓 Internship Program Active & Unlocked" : "📋 Internship Eligibility Verification Portal"}
-            </h4>
-            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
-              {user?.eligibilityStatus === "APPROVED"
-                ? "Your academic credentials & proof documents have been verified by Academic Coordinators! Access supervisor contact details and maintain your 6-month daily internship diary."
-                : user?.eligibilityStatus === "PENDING_APPROVAL"
-                ? "⏳ Your Internship Eligibility Application (JLPT Certificate & 1st-3rd Yr Result Sheet) is under review by LNBTI Academic Coordinators."
-                : "Complete your subject GPA calculation (1st Yr - 3rd Yr 2nd Sem $\\ge$ 2.0 GPA), select your Japanese level ($\\ge$ N4), and upload official proof documents for Coordinator approval."
-              }
+      {/* STAGE 3 GUIDANCE BANNER (FINAL YEAR JOB) */}
+      {stage === "FINAL_YEAR_JOB" && (
+        <BentoCard colSpan={4} padding="20px">
+          <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "16px", borderRadius: "12px" }}>
+            <h4 style={{ color: "var(--success)", margin: "0 0 6px 0" }}>🔥 Final Year Graduate Placement & Corporate Job Hub</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0, lineHeight: 1.5 }}>
+              Welcome to your final year! Apply directly to corporate HR job openings below, respond to recruiter inquiries, and optimize your ATS resume & Job Match profile for direct full-time employment.
             </p>
           </div>
-          {user?.eligibilityStatus === "APPROVED" ? (
-            <button
-              onClick={() => setShowInternModal(true)}
-              style={{
-                ...styles.growthBtn,
-                background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                padding: "10px 20px"
-              }}
-              className="button-hover"
-            >
-              🎓 Open Intern Program Portal
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowEligibilityModal(true)}
-              style={{
-                ...styles.growthBtn,
-                background: "linear-gradient(135deg, #4f46e5, #6366f1)",
-                padding: "10px 20px"
-              }}
-              className="button-hover"
-            >
-              📋 Open Eligibility Portal
-            </button>
-          )}
-        </div>
-      </BentoCard>
+        </BentoCard>
+      )}
+
+      {/* INTERNSHIP ELIGIBILITY & INTERN PROGRAM BANNER - 3RD YEAR ONLY */}
+      {stage === "YEAR_3_INTERN" && (
+        <BentoCard colSpan={4} padding="20px">
+          <div style={{ background: user?.eligibilityStatus === "APPROVED" ? "linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(16, 185, 129, 0.12))" : "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(234, 179, 8, 0.12))", border: `1px solid ${user?.eligibilityStatus === "APPROVED" ? "rgba(34, 197, 94, 0.4)" : "rgba(99, 102, 241, 0.4)"}`, padding: "18px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <h4 style={{ color: user?.eligibilityStatus === "APPROVED" ? "#22c55e" : "#818cf8", margin: "0 0 6px 0", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                {user?.eligibilityStatus === "APPROVED" ? "🎓 Internship Program Active & Unlocked" : "📋 Internship Eligibility Verification Portal"}
+              </h4>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+                {user?.eligibilityStatus === "APPROVED"
+                  ? "Your academic credentials & proof documents have been verified by Academic Coordinators! Access supervisor contact details and maintain your 6-month daily internship diary."
+                  : user?.eligibilityStatus === "PENDING_APPROVAL"
+                  ? "⏳ Your Internship Eligibility Application (JLPT Certificate & 1st-3rd Yr Result Sheet) is under review by LNBTI Academic Coordinators."
+                  : "Complete your subject GPA calculation (1st Yr - 3rd Yr 2nd Sem $\\ge$ 2.0 GPA), select your Japanese level ($\\ge$ N4), and upload official proof documents for Coordinator approval."
+                }
+              </p>
+            </div>
+            {user?.eligibilityStatus === "APPROVED" ? (
+              <button
+                onClick={() => setShowInternModal(true)}
+                style={{
+                  ...styles.growthBtn,
+                  background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                  padding: "10px 20px"
+                }}
+                className="button-hover"
+              >
+                🎓 Open Intern Program Portal
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowEligibilityModal(true)}
+                style={{
+                  ...styles.growthBtn,
+                  background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                  padding: "10px 20px"
+                }}
+                className="button-hover"
+              >
+                📋 Open Eligibility Portal
+              </button>
+            )}
+          </div>
+        </BentoCard>
+      )}
 
       {/* 📈 GITHUB TELEMETRY PROGRESS BAR & ACTIONABLE TO-DO CHECKLIST - SPANS 4 COLUMNS */}
       <BentoCard colSpan={4} disableTilt={true}>
@@ -336,6 +404,40 @@ function UserDashboard() {
           <span style={{ fontSize: "14px", fontWeight: "bold", padding: "6px 14px", borderRadius: "8px", background: totalProgress >= 75 ? "rgba(16,185,129,0.15)" : totalProgress >= 40 ? "rgba(99,102,241,0.15)" : "rgba(245,158,11,0.15)", color: totalProgress >= 75 ? "var(--success)" : totalProgress >= 40 ? "var(--accent)" : "#f59e0b" }}>
             {totalProgress >= 75 ? "🎓 Graduate / Placement Ready" : totalProgress >= 40 ? "⚡ Internship Eligible" : "📘 Skill Building Stage"}
           </span>
+        </div>
+
+        {/* DAILY AI QUIZ & IQ CHALLENGE PROMPT BANNER */}
+        <div style={{
+          padding: "16px 20px",
+          background: "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(16, 185, 129, 0.12))",
+          border: "1px solid rgba(99, 102, 241, 0.3)",
+          borderRadius: "12px",
+          marginBottom: "20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "12px"
+        }}>
+          <div>
+            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--accent)", display: "flex", alignItems: "center", gap: "8px" }}>
+              🎮 Daily Growth Assessment Challenge Ready!
+            </span>
+            <p style={{ margin: "4px 0 0 0", color: "var(--text-secondary)", fontSize: "13px" }}>
+              Sharpen your skills with AI-generated <strong>Logic IQ Tests</strong>, <strong>Software Engineering Quizzes</strong>, and <strong>Japanese Language Practice</strong> to boost your Performance Index!
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/growth")}
+            style={{
+              ...styles.growthBtn,
+              background: "linear-gradient(135deg, #6366f1, #10b981)",
+              padding: "10px 18px"
+            }}
+            className="button-hover"
+          >
+            ▶ Take Today's Quiz ➔
+          </button>
         </div>
 
         {/* DYNAMIC PROGRESS BAR */}
@@ -392,6 +494,11 @@ function UserDashboard() {
         </div>
       </BentoCard>
 
+      {/* 🏆 STUDENT PERFORMANCE LEADERBOARD - SPANS 4 COLUMNS */}
+      <BentoCard colSpan={4} disableTilt={true}>
+        <StudentLeaderboard user={user} />
+      </BentoCard>
+
       {/* 2. AI RESUME PARSER - SPANS 2 COLUMNS */}
       <BentoCard colSpan={2} disableTilt={true}>
         <ResumeEnhancer />
@@ -416,70 +523,157 @@ function UserDashboard() {
           )}
         </div>
 
-        {/* SETUP WALKTHROUGH & OAUTH CONNECT BUTTONS */}
-        {(user.githubLocked || (ghUsername && ghRepos.length > 0)) ? (
-          <div style={{ padding: "16px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        {/* SETUP WALKTHROUGH & DUAL AUTHENTICATED CONNECTIONS */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "20px" }}>
+          
+          {/* 🐙 GITHUB ACCOUNT SLOT */}
+          <div style={{ padding: "18px", background: "var(--card-item-bg)", borderRadius: "14px", border: "1px solid var(--card-item-border)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
             <div>
-              <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: "bold", display: "block" }}>
-                🔒 VERIFIED & ONE-TIME LOCKED SOCIAL ACCOUNTS
-              </span>
-              <p style={{ margin: "4px 0 0", color: "var(--text-primary)", fontSize: "14px" }}>
-                GitHub: <strong>@{ghUsername}</strong> {user.linkedinLocked && `• LinkedIn: Connected`}
-              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <h4 style={{ margin: 0, color: "var(--text-primary)", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  🐙 GitHub Code Telemetry
+                </h4>
+                <span style={{ fontSize: "11px", padding: "3px 8px", background: ghUsername ? "rgba(16, 185, 129, 0.15)" : "rgba(255,255,255,0.08)", color: ghUsername ? "#10b981" : "#aaa", borderRadius: "20px", fontWeight: "bold" }}>
+                  {ghUsername ? "CONNECTED" : "NOT CONNECTED"}
+                </span>
+              </div>
+
+              {ghUsername ? (
+                <div>
+                  <p style={{ margin: "4px 0 10px 0", color: "var(--text-secondary)", fontSize: "13px" }}>
+                    Verified Account: <strong style={{ color: "var(--accent)" }}>@{ghUsername}</strong> ({ghRepos.length} Repos imported)
+                  </p>
+                  {ghEval && (
+                    <div style={{ fontSize: "12px", color: "var(--text-primary)", background: "rgba(0,0,0,0.2)", padding: "8px 12px", borderRadius: "8px" }}>
+                      AI Score: <strong>{ghEval.score}/100</strong> • Skills: {ghEval.detectedSkills?.slice(0, 3).join(", ") || "Engineering"}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ margin: "4px 0 14px 0", color: "var(--text-secondary)", fontSize: "13px" }}>
+                  Authenticate your GitHub account to enable automated project repository imports and AI code evaluation.
+                </p>
+              )}
             </div>
-            <button
-              onClick={handleRequestSocialReset}
-              disabled={user.socialResetRequest?.status === "PENDING"}
-              style={{ ...theme.button("secondary"), fontSize: "13px" }}
-              className="button-hover"
-            >
-              {user.socialResetRequest?.status === "PENDING"
-                ? "⌛ Link Swap Requested (Pending Coordinator Approval)"
-                : "Request Coordinator to Unlock / Swap Links"}
-            </button>
+
+            <div style={{ marginTop: "14px" }}>
+              {!ghUsername && (
+                <button
+                  onClick={() => {
+                    window.location.href = `http://localhost:5000/api/auth/github/connect?studentId=${user.id || user._id}`;
+                  }}
+                  style={{ width: "100%", padding: "10px", background: "#24292e", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                  className="button-hover"
+                >
+                  🐙 Authenticate with GitHub OAuth
+                </button>
+              )}
+            </div>
           </div>
-        ) : (
-          <div style={{ padding: "20px", background: "var(--card-item-bg)", borderRadius: "14px", border: "1px solid var(--card-item-border)", marginBottom: "20px" }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "var(--text-primary)", fontSize: "16px" }}>
-              🚀 Student Setup Walkthrough — Authenticated Account Connections
-            </h4>
-            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: "0 0 16px 0", lineHeight: "1.5" }}>
-              To enable progress tracking and AI repository evaluation, connect your official GitHub account below.
-              {stage !== "YEAR_1_2" && " As a 3rd Year / Final Year student, you can also connect your LinkedIn profile."}
-            </p>
 
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              {/* GITHUB OAUTH CONNECT BUTTON - ALL STUDENTS */}
-              <button
-                onClick={() => {
-                  window.location.href = `http://localhost:5000/api/auth/github/connect?studentId=${user.id || user._id}`;
-                }}
-                style={{ padding: "12px 20px", background: "#24292e", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "bold", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-                className="button-hover"
-              >
-                🐙 Connect with GitHub (All Students)
-              </button>
+          {/* 💼 LINKEDIN PROFESSIONAL TELEMETRY SLOT */}
+          <div style={{ padding: "18px", background: "var(--card-item-bg)", borderRadius: "14px", border: "1px solid var(--card-item-border)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <h4 style={{ margin: 0, color: "var(--text-primary)", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  💼 LinkedIn Professional Telemetry
+                </h4>
+                <span style={{ fontSize: "11px", padding: "3px 8px", background: linkedinUrl ? "rgba(10, 102, 194, 0.2)" : "rgba(255,255,255,0.08)", color: linkedinUrl ? "#38bdf8" : "#aaa", borderRadius: "20px", fontWeight: "bold" }}>
+                  {linkedinUrl ? "CONNECTED & VERIFIED" : "NOT CONNECTED"}
+                </span>
+              </div>
 
-              {/* LINKEDIN OAUTH CONNECT BUTTON - 3RD YR INTERN & FINAL YR JOB ONLY */}
-              {stage !== "YEAR_1_2" && (
+              {linkedinUrl ? (
+                <div>
+                  <p style={{ margin: "4px 0 6px 0", color: "var(--text-primary)", fontSize: "13px", fontWeight: "bold" }}>
+                    {linkedinData?.headline || `${user.degreeProgram || 'Software Engineering'} Student @ LNBTI`}
+                  </p>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                    🌐 Network: <strong style={{ color: "#38bdf8" }}>{linkedinData?.connections || "500+ Connections"}</strong> • Industry: {linkedinData?.industry || "IT Services"}
+                  </div>
+                  {linkedinData?.endorsedSkills && (
+                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "10px" }}>
+                      {linkedinData.endorsedSkills.map((sk, i) => (
+                        <span key={i} style={{ fontSize: "10px", padding: "2px 6px", background: "rgba(10, 102, 194, 0.15)", color: "#38bdf8", borderRadius: "4px" }}>
+                          ✓ {sk}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <a
+                    href={linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: "12px", color: "var(--accent)", textDecoration: "underline", fontWeight: "bold" }}
+                  >
+                    🔗 View Public LinkedIn Profile ↗
+                  </a>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ margin: "4px 0 10px 0", color: "var(--text-secondary)", fontSize: "13px" }}>
+                    Link your official LinkedIn profile to boost your Recruiter Visibility Index and showcase endorsed skills to employers.
+                  </p>
+                  <form onSubmit={handleConnectLinkedin} style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                    <input
+                      type="url"
+                      placeholder="https://linkedin.com/in/your-profile"
+                      value={linkedinInput}
+                      onChange={(e) => setLinkedinInput(e.target.value)}
+                      style={{ ...theme.input(), flex: 1, padding: "6px 10px", fontSize: "12px" }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={linkingLinkedin}
+                      style={{ ...theme.button("primary"), background: "#0a66c2", padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap" }}
+                      className="button-hover"
+                    >
+                      {linkingLinkedin ? "Linking..." : "Link Profile"}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: "14px" }}>
+              {!linkedinUrl && (
                 <button
                   onClick={() => {
                     window.location.href = `http://localhost:5000/api/auth/linkedin/connect?studentId=${user.id || user._id}`;
                   }}
-                  style={{ padding: "12px 20px", background: "#0a66c2", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "bold", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  style={{ width: "100%", padding: "10px", background: "#0a66c2", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                   className="button-hover"
                 >
-                  💼 Connect with LinkedIn (Intern Ready)
+                  💼 Authenticate with LinkedIn OAuth
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* SOCIAL RESET REQUEST BANNER */}
+        {(user.githubLocked || user.linkedinLocked) && (
+          <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.2)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+              🔒 Connected social profiles are locked for university authenticity.
+            </span>
+            <button
+              onClick={handleRequestSocialReset}
+              disabled={user.socialResetRequest?.status === "PENDING"}
+              style={{ ...theme.button("secondary"), fontSize: "11px", padding: "4px 10px" }}
+              className="button-hover"
+            >
+              {user.socialResetRequest?.status === "PENDING"
+                ? "⌛ Link Swap Requested (Pending Coordinator Approval)"
+                : "Request Coordinator to Swap Links"}
+            </button>
           </div>
         )}
 
         {/* AI EVALUATION SUMMARY & DETECTED SKILLS */}
         {ghEval && (
           <div style={{ padding: "16px", background: "var(--card-item-bg)", borderRadius: "12px", border: "1px solid var(--card-item-border)", marginBottom: "20px" }}>
-            <h4 style={{ margin: "0 0 8px 0", color: "var(--text-primary)", fontSize: "15px" }}>🤖 AI Portfolio Feedback</h4>
+            <h4 style={{ margin: "0 0 8px 0", color: "var(--text-primary)", fontSize: "15px" }}>🤖 AI GitHub Portfolio Feedback</h4>
             <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "0 0 12px 0", lineHeight: "1.5" }}>
               {ghEval.summary}
             </p>
@@ -532,7 +726,7 @@ function UserDashboard() {
       {/* 3. VACANCIES & OPPORTUNITIES BOARD - ADAPTIVE PER STAGE */}
       <BentoCard colSpan={2}>
         <h3 style={{ ...styles.title, color: "#34d399", marginBottom: 20 }}>
-          {stage === "YEAR_1_2" ? "🔒 Internship Vacancies" : stage === "YEAR_3_INTERN" ? "⚡ 3rd Year 2nd Sem Internships" : "🔥 Graduate Full-Time Vacancies"}
+          {stage === "YEAR_1_2" ? "🔒 Internship Vacancies" : stage === "YEAR_3_INTERN" ? "🎓 LNBTI Official Internship Placement Status" : "🔥 Direct Full-Time Corporate Vacancies"}
         </h3>
 
         {stage === "YEAR_1_2" ? (
@@ -541,8 +735,71 @@ function UserDashboard() {
               Internship applications open in <strong>3rd Year 2nd Semester</strong>. Focus on logging daily learning activities in your Growth Tracker to raise your ATS score.
             </p>
           </div>
+        ) : stage === "YEAR_3_INTERN" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ padding: "16px", background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.25)", borderRadius: "12px" }}>
+              <span style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
+                ℹ️ ACADEMIC COORDINATOR MATCHING POLICY
+              </span>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: "1.5" }}>
+                Internship vacancies posted by industry partners are routed exclusively to the <strong>LNBTI Academic Coordinator Hub</strong>. Your Senior Lecturer will match and assign your internship supervisor.
+              </p>
+            </div>
+
+            {user?.assignedSupervisor ? (
+              <div style={{ padding: "20px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: "bold", textTransform: "uppercase" }}>
+                      ✅ OFFICIAL INTERNSHIP CONNECTED & ACTIVE
+                    </span>
+                    <h4 style={{ margin: "4px 0 0", color: "var(--text-primary)", fontSize: "18px" }}>
+                      {typeof user.assignedSupervisor === 'object' ? user.assignedSupervisor.name : "Assigned Supervisor"}
+                    </h4>
+                    <p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: "13px" }}>
+                      {typeof user.assignedSupervisor === 'object' ? `${user.assignedSupervisor.designation || 'Supervisor'} • ${user.assignedSupervisor.companyName || 'Partner Company'}` : "LNBTI Industry Partner"}
+                    </p>
+                  </div>
+                  <span style={{ padding: "6px 12px", background: "rgba(16, 185, 129, 0.2)", color: "var(--success)", borderRadius: "20px", fontSize: "12px", fontWeight: "bold" }}>
+                    Active Internship
+                  </span>
+                </div>
+                
+                {typeof user.assignedSupervisor === 'object' && (
+                  <div style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "8px 0 14px 0", display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                    {user.assignedSupervisor.email && (
+                      <a href={`mailto:${user.assignedSupervisor.email}`} style={{ color: "var(--accent)", fontWeight: "600", textDecoration: "underline" }}>
+                        📧 {user.assignedSupervisor.email}
+                      </a>
+                    )}
+                    {user.assignedSupervisor.phone && (
+                      <span style={{ color: "var(--text-primary)" }}>
+                        📞 Phone: {user.assignedSupervisor.phone}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setShowInternModal(true)}
+                  style={{ ...theme.button("primary"), width: "100%", padding: "10px", fontSize: "13px" }}
+                  className="button-hover"
+                >
+                  📖 Open Daily Internship Diary & Logbook Portal
+                </button>
+              </div>
+            ) : (
+              <div style={{ padding: "20px", background: "var(--card-item-bg)", borderRadius: "14px", border: "1px solid var(--card-item-border)", textAlign: "center" }}>
+                <span style={{ fontSize: "28px", display: "block", marginBottom: "8px" }}>⌛</span>
+                <h4 style={{ margin: "0 0 6px 0", color: "var(--text-primary)" }}>Matching in Progress</h4>
+                <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0 }}>
+                  Your Academic Coordinator is currently reviewing supervisor internship vacancies to match and assign your placement.
+                </p>
+              </div>
+            )}
+          </div>
         ) : displayJobs.length === 0 ? (
-          <p style={{ color: "#888" }}>No active vacancy postings available for your stage.</p>
+          <p style={{ color: "#888" }}>No active direct job postings available.</p>
         ) : (
           <div style={styles.grid}>
             {displayJobs.map(job => (
@@ -550,10 +807,10 @@ function UserDashboard() {
                 <div>
                   <h4 style={{ margin: "0 0 5px 0", fontSize: "18px", color: "var(--text-primary)" }}>{job.title}</h4>
                   <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: "bold", background: "rgba(16, 185, 129, 0.12)", padding: "2px 8px", borderRadius: "4px" }}>
-                    {job.salary} • {job.opportunityType || "INTERNSHIP"}
+                    {job.salary} • {job.opportunityType || "FULL_TIME"}
                   </span>
                   <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "10px" }}>
-                    {job.employerId?.name} • {job.location}
+                    {job.employerId?.companyName || job.employerId?.name || "Corporate Employer"} • {job.location}
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "10px", lineHeight: "1.4" }}>
                     {job.description}
@@ -604,41 +861,6 @@ function UserDashboard() {
                 <div style={styles.btnGroup}>
                   <button onClick={() => handleDecision(req._id, 'accept')} style={styles.acceptBtn}>Accept</button>
                   <button onClick={() => handleDecision(req._id, 'deny')} style={styles.denyBtn}>Decline</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </BentoCard>
-      )}
-
-      {/* 4. ACTIVE CONNECTIONS */}
-      {requests.filter(r => r.status === 'ACCEPTED').length > 0 && (
-        <BentoCard colSpan={2}>
-          <h3 style={{ ...styles.title, color: "#22c55e", marginBottom: 20 }}>
-            ✅ Active Connections
-          </h3>
-          <div style={{ display: "grid", gap: 15 }}>
-            {requests.filter(r => r.status === 'ACCEPTED').map((req) => (
-              <div key={req._id} style={styles.connectedCard}>
-                <div>
-                  <h4 style={{ margin: "0 0 5px 0", color: "var(--text-primary)" }}>
-                    {req.employerId?.name || "Company"}
-                  </h4>
-                  <p style={{ margin: "4px 0 0", color: theme.colors.textSecondary, fontSize: 14 }}>
-                    Contact:{" "}
-                    <a
-                      href={`mailto:${req.employerId?.email}`}
-                      style={{ color: theme.colors.accent, textDecoration: "underline" }}
-                    >
-                      {req.employerId?.email}
-                    </a>
-                  </p>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <span style={styles.pillSuccess}>Connected</span>
-                  <div style={{ fontSize: "11px", color: theme.colors.textSecondary, marginTop: "5px" }}>
-                    {new Date(req.createdAt).toLocaleDateString()}
-                  </div>
                 </div>
               </div>
             ))}

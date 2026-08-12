@@ -29,6 +29,14 @@ function Register() {
     if (name === "degreeBatch") {
       const defaultBatch = value === "UOG" ? "UOG1" : "SE1";
       setFormData({ ...formData, degreeBatch: value, batchNumber: defaultBatch });
+    } else if (name === "academicYear") {
+      let autoStage = "YEAR_1_2";
+      if (value === "Year 3") {
+        autoStage = "YEAR_3_INTERN";
+      } else if (value === "Year 4") {
+        autoStage = "FINAL_YEAR_JOB";
+      }
+      setFormData({ ...formData, academicYear: value, studentStage: autoStage });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -78,17 +86,55 @@ function Register() {
         ) : (
           <form onSubmit={handleSubmit} style={styles.form}>
             <label style={styles.label}>
-              Account Role
+              Main Account Type
               <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
+                name="mainRole"
+                value={formData.role === "student" ? "student" : "recruiter"}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "student") {
+                    setFormData({ ...formData, role: "student" });
+                  } else {
+                    setFormData({ ...formData, role: "supervisor" }); // default recruiter type to supervisor
+                  }
+                }}
                 style={styles.select}
               >
-                <option value="student" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>LNBTI Student</option>
-                <option value="supervisor" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>Intern Company Supervisor (Recruiter)</option>
+                <option value="student" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>🎓 LNBTI Student Account</option>
+                <option value="recruiter" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>💼 Recruiter / Industry Partner Account</option>
               </select>
             </label>
+
+            {formData.role !== "student" && (
+              <label style={styles.label}>
+                Recruiter Category
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  style={styles.select}
+                >
+                  <option value="supervisor" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
+                    1 - Intern Offering (3rd-Year Internship Supervisor)
+                  </option>
+                  <option value="employer" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
+                    2 - Job Offering (4th-Year Direct Corporate HR)
+                  </option>
+                </select>
+              </label>
+            )}
+
+            {formData.role === "supervisor" && (
+              <div style={{ padding: "10px 14px", background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.3)", borderRadius: "8px", fontSize: "12px", color: "var(--text-primary)", marginBottom: "4px" }}>
+                ℹ️ <strong>Category 1 (Intern Offering):</strong> Internship vacancies will be routed to the <strong>LNBTI Academic Coordinator Hub</strong> for student matching & assignment.
+              </div>
+            )}
+
+            {formData.role === "employer" && (
+              <div style={{ padding: "10px 14px", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "8px", fontSize: "12px", color: "var(--text-primary)", marginBottom: "4px" }}>
+                🚀 <strong>Category 2 (Job Offering):</strong> Direct full-time jobs will be published <strong>directly to 4th-Year (Final Year) Student Dashboards</strong>.
+              </div>
+            )}
 
             <label style={styles.label}>
               Full Name
@@ -103,7 +149,7 @@ function Register() {
             </label>
 
             <label style={styles.label}>
-              {formData.role === "student" ? "University Email" : "Email Address"}
+              {formData.role === "student" ? "University Email" : "Work / Company Email"}
               <input
                 name="email"
                 type="email"
@@ -237,7 +283,7 @@ function Register() {
               </>
             )}
 
-            {formData.role === "supervisor" && (
+            {(formData.role === "supervisor" || formData.role === "employer") && (
               <>
                 <label style={styles.label}>
                   Company / Organization Name
@@ -254,7 +300,7 @@ function Register() {
                   Designation / Role
                   <input
                     name="designation"
-                    placeholder="e.g., Senior Tech Lead / HR Lead"
+                    placeholder="e.g., Senior Tech Lead / HR Manager"
                     value={formData.designation}
                     onChange={handleChange}
                     style={styles.input}

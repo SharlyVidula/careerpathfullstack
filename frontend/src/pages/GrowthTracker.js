@@ -5,8 +5,7 @@ import theme from "../theme";
 import Skeleton from "../components/Skeleton";
 import BentoCard from "../components/BentoCard";
 import { useToast } from "../components/ToastContext";
-
-
+import QuizModal from "../components/QuizModal";
 
 const DEFAULT = {
   progress: {
@@ -45,6 +44,10 @@ export default function GrowthTracker() {
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
+
+  // Quiz Modal State
+  const [quizCategory, setQuizCategory] = useState(null);
+  const [showQuizModal, setShowQuizModal] = useState(false);
 
   // ✅ NEW: timeline + streak
   const [history, setHistory] = useState([]);
@@ -223,6 +226,123 @@ export default function GrowthTracker() {
       </div>
 
       {!!error && <div style={{ ...styles.errorBox, gridColumn: "1 / -1" }}>{error}</div>}
+
+      {/* 🎮 DAILY GROWTH ASSESSMENT & AI QUIZ HUB - SPANS 4 COLUMNS */}
+      <BentoCard colSpan={4} disableTilt={true}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <h3 style={{ ...styles.h2, color: "var(--accent, #6366f1)", margin: 0, fontSize: "20px" }}>
+              🎮 Daily Growth Assessment & AI Quiz Hub
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
+              Take daily AI-generated quizzes as a hobby to level up your <strong>Performance Index</strong>, earn XP points, and maintain your streak!
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <span style={{ fontSize: "13px", fontWeight: "bold", padding: "6px 12px", background: "rgba(245,158,11,0.15)", color: "#f59e0b", borderRadius: "8px", border: "1px solid rgba(245,158,11,0.3)" }}>
+              🔥 {streak} Day Streak
+            </span>
+            <span style={{ fontSize: "13px", fontWeight: "bold", padding: "6px 12px", background: "rgba(16,185,129,0.15)", color: "#34d399", borderRadius: "8px", border: "1px solid rgba(16,185,129,0.3)" }}>
+              ✨ +10% Index Boost / Quiz
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
+          {/* Card 1: IQ Test */}
+          <div
+            onClick={() => {
+              setQuizCategory("IQ");
+              setShowQuizModal(true);
+            }}
+            style={{
+              padding: "20px",
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+              borderRadius: "14px",
+              cursor: "pointer",
+              transition: "transform 0.2s, border-color 0.2s"
+            }}
+            className="card-hover"
+          >
+            <div style={{ fontSize: "36px", marginBottom: "10px" }}>🧠</div>
+            <h4 style={{ margin: "0 0 6px 0", color: "var(--text-primary)", fontSize: "16px" }}>Logic & IQ Challenge</h4>
+            <p style={{ margin: "0 0 14px 0", color: "var(--text-secondary)", fontSize: "13px", lineHeight: "1.5" }}>
+              Analytical reasoning, number patterns, and spatial logic puzzles to sharpen problem solving.
+            </p>
+            <span style={{ fontSize: "12px", fontWeight: "bold", color: "var(--accent)" }}>
+              ▶ Start IQ Challenge ➔
+            </span>
+          </div>
+
+          {/* Card 2: Software Engineering Quiz */}
+          <div
+            onClick={() => {
+              setQuizCategory("SE");
+              setShowQuizModal(true);
+            }}
+            style={{
+              padding: "20px",
+              background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.05))",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              borderRadius: "14px",
+              cursor: "pointer",
+              transition: "transform 0.2s, border-color 0.2s"
+            }}
+            className="card-hover"
+          >
+            <div style={{ fontSize: "36px", marginBottom: "10px" }}>💻</div>
+            <h4 style={{ margin: "0 0 6px 0", color: "var(--text-primary)", fontSize: "16px" }}>Software Engineering Quiz</h4>
+            <p style={{ margin: "0 0 14px 0", color: "var(--text-secondary)", fontSize: "13px", lineHeight: "1.5" }}>
+              Auto-tailored by your Academic Year ({user?.studentStage || "1st/2nd Yr"}). Tests architecture & code logic.
+            </p>
+            <span style={{ fontSize: "12px", fontWeight: "bold", color: "#34d399" }}>
+              ▶ Take SE Quiz (AI Generated) ➔
+            </span>
+          </div>
+
+          {/* Card 3: Japanese Language Quiz */}
+          <div
+            onClick={() => {
+              setQuizCategory("JLPT");
+              setShowQuizModal(true);
+            }}
+            style={{
+              padding: "20px",
+              background: "linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(244, 114, 182, 0.05))",
+              border: "1px solid rgba(236, 72, 153, 0.3)",
+              borderRadius: "14px",
+              cursor: "pointer",
+              transition: "transform 0.2s, border-color 0.2s"
+            }}
+            className="card-hover"
+          >
+            <div style={{ fontSize: "36px", marginBottom: "10px" }}>🇯🇵</div>
+            <h4 style={{ margin: "0 0 6px 0", color: "var(--text-primary)", fontSize: "16px" }}>Japanese Language Mastery</h4>
+            <p style={{ margin: "0 0 14px 0", color: "var(--text-secondary)", fontSize: "13px", lineHeight: "1.5" }}>
+              Tailored by your JLPT level ({user?.jlptLevel || "N4"}). Practice Kanji, particles & workplace honorifics.
+            </p>
+            <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ec4899" }}>
+              ▶ Practice Japanese ➔
+            </span>
+          </div>
+        </div>
+      </BentoCard>
+
+      {/* Quiz Modal Render */}
+      <QuizModal
+        isOpen={showQuizModal}
+        onClose={() => setShowQuizModal(false)}
+        category={quizCategory}
+        user={user}
+        onQuizCompleted={(res) => {
+          addToast(res.message || "🎉 Performance Index boosted!", "success");
+          if (res.progress) {
+            setState(prev => ({ ...prev, progress: res.progress }));
+          }
+          refreshHistoryAndStreak();
+        }}
+      />
 
       {/* LEFT: PROGRESS */}
       <BentoCard colSpan={2} style={{ justifyContent: "flex-start", gap: "20px" }}>

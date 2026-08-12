@@ -31,8 +31,8 @@ export default function Login() {
 
       if (role === "admin" || role === "coordinator") {
         navigate("/admin");
-      } else if (role === "employer") {
-        navigate("/employer-dashboard"); // ✅ Now Employers go here
+      } else if (role === "employer" || role === "supervisor") {
+        navigate("/employer-dashboard"); // ✅ Employers & Supervisors go here
       } else {
         navigate("/user-dashboard"); // Students go here
       }

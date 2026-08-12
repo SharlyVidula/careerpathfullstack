@@ -77,17 +77,20 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
     }
   };
 
+  const isPlaced = Boolean(user?.assignedSupervisor);
+
   return (
     <div style={{
       position: "fixed",
       top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0, 0, 0, 0.75)",
-      backdropFilter: "blur(8px)",
+      background: "rgba(5, 10, 25, 0.88)",
+      backdropFilter: "blur(14px)",
+      WebkitBackdropFilter: "blur(14px)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      zIndex: 9990,
-      padding: "16px"
+      zIndex: 50000,
+      padding: "80px 20px 30px"
     }}>
       <div style={{
         background: "#0f172a",
@@ -95,11 +98,11 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
         borderRadius: theme.radii.xl,
         width: "100%",
         maxWidth: "960px",
-        maxHeight: "90vh",
+        maxHeight: "85vh",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        boxShadow: "0 20px 50px rgba(0, 0, 0, 0.5)",
+        boxShadow: "0 20px 50px rgba(0, 0, 0, 0.6)",
         color: "#fff"
       }}>
         {/* Modal Header */}
@@ -108,7 +111,7 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
           padding: "18px 24px",
           borderBottom: "1px solid var(--glass-border)",
           display: "flex",
-          justify: "space-between",
+          justifyContent: "space-between",
           alignItems: "center"
         }}>
           <div>
@@ -164,7 +167,12 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
           </button>
 
           <button
-            onClick={() => setActiveTab("diary")}
+            onClick={() => {
+              if (!isPlaced) {
+                addToast("🔒 Daily diary is available only after your Academic Coordinator assigns your internship placement.", "info");
+              }
+              setActiveTab("diary");
+            }}
             style={{
               background: "none",
               border: "none",
@@ -176,11 +184,16 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
               cursor: "pointer"
             }}
           >
-            📖 6-Month Daily Diary
+            📖 6-Month Daily Diary {isPlaced ? "🔓" : "🔒"}
           </button>
 
           <button
-            onClick={() => setActiveTab("supervisors")}
+            onClick={() => {
+              if (!isPlaced) {
+                addToast("🔒 Supervisor contacts are available only after your Academic Coordinator assigns your internship placement.", "info");
+              }
+              setActiveTab("supervisors");
+            }}
             style={{
               background: "none",
               border: "none",
@@ -192,7 +205,7 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
               cursor: "pointer"
             }}
           >
-            👔 Supervisor Contacts {eligibility.isEligible ? "🔓" : "🔒"}
+            👔 Supervisor Contacts {isPlaced ? "🔓" : "🔒"}
           </button>
         </div>
 
@@ -224,11 +237,55 @@ function InternProgramModal({ user, onClose, onUserUpdated }) {
               )}
 
               {activeTab === "diary" && (
-                <InternDiary user={user} />
+                !isPlaced ? (
+                  <div style={{
+                    background: "rgba(234, 179, 8, 0.08)",
+                    border: "1px solid rgba(234, 179, 8, 0.3)",
+                    borderRadius: theme.radii.xl,
+                    padding: "36px 24px",
+                    textAlign: "center",
+                    margin: "20px 0"
+                  }}>
+                    <div style={{ fontSize: "44px", marginBottom: "12px" }}>🔒</div>
+                    <h3 style={{ color: "#eab308", margin: "0 0 8px 0", fontSize: "18px" }}>
+                      Available Only After Internship Placement
+                    </h3>
+                    <p style={{ margin: "0 auto", maxWidth: "540px", fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
+                      Your <strong>6-Month Daily Internship Logbook</strong> will be unlocked <strong>only after</strong> your LNBTI Academic Coordinator matches and assigns your official internship placement.
+                    </p>
+                    <div style={{ marginTop: "14px", fontSize: "12px", color: "var(--accent)", fontWeight: "600" }}>
+                      ⏳ Status: Internship Allocation Managed by Academic Coordinator
+                    </div>
+                  </div>
+                ) : (
+                  <InternDiary user={user} />
+                )
               )}
 
               {activeTab === "supervisors" && (
-                <SupervisorContactModal user={user} eligibility={eligibility} />
+                !isPlaced ? (
+                  <div style={{
+                    background: "rgba(234, 179, 8, 0.08)",
+                    border: "1px solid rgba(234, 179, 8, 0.3)",
+                    borderRadius: theme.radii.xl,
+                    padding: "36px 24px",
+                    textAlign: "center",
+                    margin: "20px 0"
+                  }}>
+                    <div style={{ fontSize: "44px", marginBottom: "12px" }}>🔒</div>
+                    <h3 style={{ color: "#eab308", margin: "0 0 8px 0", fontSize: "18px" }}>
+                      Available Only After Internship Placement
+                    </h3>
+                    <p style={{ margin: "0 auto", maxWidth: "540px", fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
+                      Industry Supervisor contact information will be available <strong>only after</strong> your LNBTI Academic Coordinator matches and assigns your official internship placement.
+                    </p>
+                    <div style={{ marginTop: "14px", fontSize: "12px", color: "var(--accent)", fontWeight: "600" }}>
+                      ⏳ Status: Internship Allocation Managed by Academic Coordinator
+                    </div>
+                  </div>
+                ) : (
+                  <SupervisorContactModal user={user} eligibility={eligibility} />
+                )
               )}
             </>
           )}

@@ -64,6 +64,30 @@ function SupervisorContactModal({ user, eligibility }) {
     return <div style={{ padding: "20px", color: "var(--text-secondary)" }}>Loading Supervisor & Recruiter directory...</div>;
   }
 
+  if (!user?.assignedSupervisor) {
+    return (
+      <div style={{
+        background: "rgba(234, 179, 8, 0.08)",
+        border: "1px solid rgba(234, 179, 8, 0.3)",
+        borderRadius: theme.radii.xl,
+        padding: "36px 24px",
+        textAlign: "center",
+        color: "var(--text-primary)"
+      }}>
+        <div style={{ fontSize: "44px", marginBottom: "12px" }}>🔒</div>
+        <h3 style={{ color: "#eab308", margin: "0 0 8px 0", fontSize: "18px" }}>
+          Available Only After Internship Placement
+        </h3>
+        <p style={{ margin: "0 auto", maxWidth: "540px", fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
+          Industry Supervisor contact information will be available <strong>only after</strong> your LNBTI Academic Coordinator matches and assigns your official internship placement.
+        </p>
+        <div style={{ marginTop: "14px", fontSize: "12px", color: "var(--accent)", fontWeight: "600" }}>
+          ⏳ Status: Internship Allocation Managed by Academic Coordinator
+        </div>
+      </div>
+    );
+  }
+
   if (accessDenied || userStage !== "YEAR_3_INTERN" || !isEligible) {
     return (
       <div style={{

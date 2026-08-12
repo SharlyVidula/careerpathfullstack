@@ -14,7 +14,7 @@ function Navbar() {
   const getDashboardPath = () => {
     if (!user) return "/login";
     if (user.role === "admin" || user.role === "coordinator") return "/admin";
-    if (user.role === "employer") return "/employer-dashboard";
+    if (user.role === "employer" || user.role === "supervisor") return "/employer-dashboard";
     return "/user-dashboard";
   };
 

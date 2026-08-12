@@ -154,13 +154,14 @@ function InternEligibilityPortalModal({ user, onClose, onUserUpdated }) {
     <div style={{
       position: "fixed",
       top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0, 0, 0, 0.8)",
-      backdropFilter: "blur(10px)",
+      background: "rgba(5, 10, 25, 0.88)",
+      backdropFilter: "blur(14px)",
+      WebkitBackdropFilter: "blur(14px)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      zIndex: 9990,
-      padding: "16px"
+      zIndex: 50000,
+      padding: "80px 20px 30px"
     }}>
       <div style={{
         background: "#0f172a",
@@ -168,11 +169,11 @@ function InternEligibilityPortalModal({ user, onClose, onUserUpdated }) {
         borderRadius: theme.radii.xl,
         width: "100%",
         maxWidth: "920px",
-        maxHeight: "92vh",
+        maxHeight: "85vh",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+        boxShadow: "0 20px 50px rgba(0, 0, 0, 0.6)",
         color: "#fff"
       }}>
         {/* Modal Header */}

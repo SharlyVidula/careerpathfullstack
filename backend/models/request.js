@@ -11,12 +11,18 @@ const requestSchema = new mongoose.Schema({
     ref: 'User', 
     required: true 
   },
+  requestedByRole: {
+    type: String,
+    enum: ['supervisor', 'employer'],
+    default: 'employer'
+  },
   status: { 
     type: String, 
     // This list defines every possible state of a job request
     enum: [
-        'PENDING_ADMIN',       // 1. Employer sent it, waiting for Admin
-        'PENDING_EMPLOYEE',    // 2. Admin approved, waiting for Student
+        'PENDING_COORDINATOR', // 0. Supervisor sent connection request, waiting for Academic Coordinator
+        'PENDING_ADMIN',       // 1. Employer sent it, waiting for Admin / Coordinator
+        'PENDING_EMPLOYEE',    // 2. Admin/Coordinator approved, waiting for Student
         'ACCEPTED',            // 3. Student accepted (Connection made!)
         'DENIED',              // 4. Student said no
         'REJECTED_BY_ADMIN'    // 5. Admin blocked it (Spam/Safety)

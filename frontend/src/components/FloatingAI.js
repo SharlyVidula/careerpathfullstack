@@ -88,7 +88,7 @@ export default function FloatingAI() {
                 style={{
                     position: "fixed", bottom: "30px", right: "30px", width: "60px", height: "60px",
                     borderRadius: "50%", background: "var(--accent)", color: "var(--btn-text)", border: "none",
-                    fontWeight: "bold", fontSize: "24px", cursor: "pointer", zIndex: 9999,
+                    fontWeight: "bold", fontSize: "24px", cursor: "pointer", zIndex: 9000,
                     boxShadow: "0 4px 20px rgba(99, 102, 241, 0.3)",
                     display: "flex", alignItems: "center", justifyContent: "center"
                 }}
@@ -100,7 +100,7 @@ export default function FloatingAI() {
             {open && (
                 <div style={{
                     position: "fixed", bottom: "100px", right: "30px", width: "340px", height: "450px",
-                    ...theme.glassPanel("15px"), display: "flex", flexDirection: "column", zIndex: 9999,
+                    ...theme.glassPanel("15px"), display: "flex", flexDirection: "column", zIndex: 9000,
                     animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards", transformOrigin: "bottom right"
                 }}>
                     <div style={{ padding: "15px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: "8px" }}>
