@@ -6,6 +6,8 @@ import CareerForm from "../CareerForm";
 import ResumeEnhancer from "../components/ResumeEnhancer";
 import { useToast } from "../components/ToastContext";
 import BentoCard from "../components/BentoCard";
+import InternProgramModal from "../components/InternProgramModal";
+import InternEligibilityPortalModal from "../components/InternEligibilityPortalModal";
 
 
 function UserDashboard() {
@@ -15,9 +17,17 @@ function UserDashboard() {
   const [requests, setRequests] = useState([]);
   const [saved, setSaved] = useState([]);
   const [jobs, setJobs] = useState([]); // 🆕 State for Jobs
-  const [uploading, setUploading] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState(() => JSON.parse(localStorage.getItem("appliedJobs") || "[]"));
   const [enlargedAvatar, setEnlargedAvatar] = useState(false);
+  const [showInternModal, setShowInternModal] = useState(false);
+  const [showEligibilityModal, setShowEligibilityModal] = useState(false);
+
+  const [ghUsername, setGhUsername] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [ghRepos, setGhRepos] = useState([]);
+  const [ghEval, setGhEval] = useState(null);
+  const [syncingGh, setSyncingGh] = useState(false);
+  const [manualTodoChecked, setManualTodoChecked] = useState(false);
 
   useEffect(() => {
     // 1. Check Login
@@ -29,8 +39,16 @@ function UserDashboard() {
     const parsedUser = JSON.parse(data);
     setUser(parsedUser);
 
+    // OAuth Callback Notifications
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("status") === "github_connected") {
+      addToast("🎉 Official GitHub account authenticated & connected successfully!", "success");
+    } else if (searchParams.get("status") === "linkedin_connected") {
+      addToast("🎉 Official LinkedIn account authenticated & connected successfully!", "success");
+    }
+
     // 2. Fetch Data
-    fetchDashboardData(parsedUser.id);
+    fetchDashboardData(parsedUser.id || parsedUser._id);
   }, [navigate]);
 
   const fetchDashboardData = async (userId) => {
@@ -43,39 +61,83 @@ function UserDashboard() {
       const savedRes = await apiClient.get(`/users/saved?userId=${userId}`);
       setSaved(savedRes.data.saved || []);
 
-      // 🆕 Fetch Approved Jobs
+      // Fetch Approved Jobs
       const jobsRes = await apiClient.get("/users/jobs");
       setJobs(jobsRes.data.jobs || []);
+
+      // 🎓 Fetch Internship Eligibility & Stage from Backend database
+      try {
+        const eligRes = await apiClient.get(`/intern/eligibility/${userId}`);
+        if (eligRes.data?.ok) {
+          const backendStatus = eligRes.data.eligibility?.eligibilityStatus || "NOT_SUBMITTED";
+          const backendStage = eligRes.data.userStage || "YEAR_1_2";
+
+          setUser(prevUser => {
+            if (!prevUser) return prevUser;
+            const updatedUser = {
+              ...prevUser,
+              eligibilityStatus: backendStatus,
+              studentStage: backendStage
+            };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            return updatedUser;
+          });
+        }
+      } catch (eligErr) {
+        console.error("Error syncing eligibility status:", eligErr);
+      }
+
+      // 🐙 Fetch GitHub & LinkedIn Connected Account Portfolio
+      const ghRes = await apiClient.get(`/github/portfolio?userId=${userId}`);
+      if (ghRes.data?.ok) {
+        setGhUsername(ghRes.data.githubUsername || "");
+        setLinkedinUrl(ghRes.data.linkedinProfileUrl || "");
+        setGhRepos(ghRes.data.githubRepos || []);
+        setGhEval(ghRes.data.githubEvaluation || null);
+      }
 
     } catch (e) {
       console.error("Error loading dashboard data:", e);
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("resume", file);
-    formData.append("userId", user.id);
-
+  const handleSyncGitHub = async () => {
+    if (!ghUsername.trim()) {
+      addToast("Please enter a GitHub username first.", "warning");
+      return;
+    }
+    setSyncingGh(true);
     try {
-      const res = await apiClient.post("/users/upload-resume", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+      const res = await apiClient.post("/github/connect", {
+        userId: user.id || user._id,
+        githubUsername: ghUsername.trim(),
+        linkedinProfileUrl: linkedinUrl.trim()
       });
-      const updatedUser = { ...user, seekingRole: res.data.role, atsScore: res.data.atsScore };
-      if (res.data.profilePic) updatedUser.profilePic = res.data.profilePic;
-      if (res.data.extractedName) updatedUser.extractedName = res.data.extractedName;
-      if (res.data.resumeText) updatedUser.resumeText = res.data.resumeText; // 🆕 Store text to avoid manual pasting
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      addToast("Resume uploaded successfully!", "success");
+      if (res.data?.ok) {
+        setGhRepos(res.data.githubRepos || []);
+        setGhEval(res.data.githubEvaluation || null);
+        setUser({ ...user, githubLocked: true, linkedinLocked: true });
+        addToast(res.data.message || "GitHub connected & public repos evaluated!", "success");
+      }
     } catch (err) {
-      addToast("Upload failed.", "error");
+      addToast(err.response?.data?.message || "Failed to connect GitHub account.", "error");
     } finally {
-      setUploading(false);
+      setSyncingGh(false);
+    }
+  };
+
+  const handleRequestSocialReset = async () => {
+    try {
+      const res = await apiClient.post("/users/student/request-social-reset", {
+        userId: user.id || user._id,
+        reason: "Student requested GitHub/LinkedIn modification"
+      });
+      if (res.data?.ok) {
+        setUser({ ...user, socialResetRequest: { status: "PENDING" } });
+        addToast(res.data.message || "Modification request sent to Coordinator!", "success");
+      }
+    } catch (err) {
+      addToast("Failed to submit modification request.", "error");
     }
   };
 
@@ -91,6 +153,29 @@ function UserDashboard() {
   };
 
   if (!user) return null;
+
+  const stage = user?.studentStage || "YEAR_1_2";
+  const stageLabels = {
+    YEAR_1_2: "📘 1st & 2nd Year Skill Building Stage",
+    YEAR_3_INTERN: "⚡ 3rd Year 2nd Sem Intern-Ready Stage",
+    FINAL_YEAR_JOB: "🎓 Final Year Graduate Job-Expecting Stage"
+  };
+
+  // 📈 PROGRESS BAR & TO-DO CHECKLIST COMPUTATION
+  const isGhConnected = Boolean(user.githubLocked || (ghUsername && ghRepos.length > 0));
+  const isGhReposGoal = ghRepos.length >= 3;
+  const isAtsGoal = (user.atsScore || 0) >= 75;
+  const isGhScoreGoal = (ghEval?.score || 0) >= 70;
+
+  const todoItems = [
+    { id: "gh_conn", text: "🐙 Connect official GitHub account via OAuth", points: 20, done: isGhConnected },
+    { id: "gh_repos", text: "📦 Publish at least 3 public repositories on GitHub", points: 20, done: isGhReposGoal },
+    { id: "resume_ats", text: "📄 Upload resume & achieve ATS score > 75%", points: 20, done: isAtsGoal },
+    { id: "gh_score", text: "🤖 Achieve AI GitHub Code Quality Score > 70/100", points: 20, done: isGhScoreGoal },
+    { id: "growth_log", text: "🚀 Log daily learning activities in Growth Tracker", points: 20, done: manualTodoChecked }
+  ];
+
+  const totalProgress = todoItems.reduce((acc, item) => acc + (item.done ? item.points : 0), 0);
 
   const displayJobs = jobs.filter(job => !appliedJobs.includes(job._id));
 
@@ -115,62 +200,349 @@ function UserDashboard() {
             </div>
             <div>
               <h2 style={styles.title}>Welcome back, {user.extractedName || user.name}</h2>
-              <p style={styles.subText}>{user.email}</p>
+              <p style={styles.subText}>
+                📧 {user.email} {user.indexNumber && `• 🪪 ${user.indexNumber}`} {user.batchNumber && `• 🎓 ${user.batchNumber}`}
+              </p>
             </div>
           </div>
 
           <div style={styles.actionRow}>
+            {user?.eligibilityStatus === "APPROVED" ? (
+              <button
+                onClick={() => setShowInternModal(true)}
+                style={{
+                  ...styles.growthBtn,
+                  background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                  border: "1px solid rgba(34, 197, 94, 0.5)",
+                  boxShadow: "0 4px 14px rgba(34, 197, 94, 0.3)"
+                }}
+                className="button-hover"
+              >
+                🎓 Intern Program
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowEligibilityModal(true)}
+                style={{
+                  ...styles.growthBtn,
+                  background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                  border: "1px solid rgba(99, 102, 241, 0.5)",
+                  boxShadow: "0 4px 14px rgba(99, 102, 241, 0.3)"
+                }}
+                className="button-hover"
+              >
+                📋 Internship Eligibility & Proof Upload
+              </button>
+            )}
+
             <button onClick={() => navigate("/growth")} style={styles.growthBtn} className="button-hover">
               🚀 Growth Tracker
             </button>
-            <button onClick={() => navigate("/jd-match")} style={styles.growthBtn} className="button-hover">
-              📑 Job Match
+            <button
+              onClick={() => {
+                if (stage === "YEAR_1_2") {
+                  addToast("🔒 Job Role Match is locked for 1st & 2nd Year students. It unlocks in Stage 2 (3rd Year Intern Ready).", "warning");
+                } else {
+                  navigate("/jd-match");
+                }
+              }}
+              style={{
+                ...styles.growthBtn,
+                opacity: stage === "YEAR_1_2" ? 0.6 : 1,
+                cursor: stage === "YEAR_1_2" ? "not-allowed" : "pointer"
+              }}
+              className="button-hover"
+            >
+              {stage === "YEAR_1_2" ? "🔒 Job Match (Locked)" : "📑 Job Match"}
             </button>
           </div>
         </div>
 
         <div style={styles.pillRow}>
-          <span style={styles.pill}>Student Account</span>
-          <span style={styles.pillSecondary}>Profile synced</span>
-          <span style={styles.pillSuccess}>AI Growth Tracking Active</span>
+          <span style={styles.pill}>{stageLabels[stage] || stage}</span>
+          <span style={styles.pillSecondary}>LNBTI Verified Student</span>
+          <span style={styles.pillSuccess}>Stage Controlled by Coordinator</span>
+        </div>
+      </BentoCard>
+
+      {/* STAGE GUIDANCE BANNER */}
+      {stage === "YEAR_1_2" && (
+        <BentoCard colSpan={4} padding="20px">
+          <div style={{ background: "rgba(99, 102, 241, 0.08)", border: "1px solid rgba(99, 102, 241, 0.25)", padding: "16px", borderRadius: "12px" }}>
+            <h4 style={{ color: "var(--accent)", margin: "0 0 6px 0" }}>📘 Stage 1 Guidance: Foundation & Skills</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0, lineHeight: 1.5 }}>
+              Welcome! As a 1st/2nd year student, focus on building foundational technical skills, creating your initial resume draft, and logging daily learning progress in the Growth Tracker.
+              Your Academic Coordinator (Senior Lecturer) will promote your account to <strong>Stage 2 (3rd Year Intern Ready)</strong> when you reach internship eligibility.
+            </p>
+          </div>
+        </BentoCard>
+      )}
+
+      {/* INTERNSHIP ELIGIBILITY & INTERN PROGRAM BANNER */}
+      <BentoCard colSpan={4} padding="20px">
+        <div style={{ background: user?.eligibilityStatus === "APPROVED" ? "linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(16, 185, 129, 0.12))" : "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(234, 179, 8, 0.12))", border: `1px solid ${user?.eligibilityStatus === "APPROVED" ? "rgba(34, 197, 94, 0.4)" : "rgba(99, 102, 241, 0.4)"}`, padding: "18px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h4 style={{ color: user?.eligibilityStatus === "APPROVED" ? "#22c55e" : "#818cf8", margin: "0 0 6px 0", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              {user?.eligibilityStatus === "APPROVED" ? "🎓 Internship Program Active & Unlocked" : "📋 Internship Eligibility Verification Portal"}
+            </h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+              {user?.eligibilityStatus === "APPROVED"
+                ? "Your academic credentials & proof documents have been verified by Academic Coordinators! Access supervisor contact details and maintain your 6-month daily internship diary."
+                : user?.eligibilityStatus === "PENDING_APPROVAL"
+                ? "⏳ Your Internship Eligibility Application (JLPT Certificate & 1st-3rd Yr Result Sheet) is under review by LNBTI Academic Coordinators."
+                : "Complete your subject GPA calculation (1st Yr - 3rd Yr 2nd Sem $\\ge$ 2.0 GPA), select your Japanese level ($\\ge$ N4), and upload official proof documents for Coordinator approval."
+              }
+            </p>
+          </div>
+          {user?.eligibilityStatus === "APPROVED" ? (
+            <button
+              onClick={() => setShowInternModal(true)}
+              style={{
+                ...styles.growthBtn,
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                padding: "10px 20px"
+              }}
+              className="button-hover"
+            >
+              🎓 Open Intern Program Portal
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowEligibilityModal(true)}
+              style={{
+                ...styles.growthBtn,
+                background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                padding: "10px 20px"
+              }}
+              className="button-hover"
+            >
+              📋 Open Eligibility Portal
+            </button>
+          )}
+        </div>
+      </BentoCard>
+
+      {/* 📈 GITHUB TELEMETRY PROGRESS BAR & ACTIONABLE TO-DO CHECKLIST - SPANS 4 COLUMNS */}
+      <BentoCard colSpan={4} disableTilt={true}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <h3 style={{ ...styles.title, color: "var(--accent)" }}>
+              📊 Student Performance & Portfolio Progress ({totalProgress}%)
+            </h3>
+            <p style={{ color: theme.colors.textSecondary, fontSize: "14px", margin: "4px 0 0" }}>
+              Complete the actionable checklist items below to boost your progress status bar and prepare for coordinator promotion.
+            </p>
+          </div>
+          <span style={{ fontSize: "14px", fontWeight: "bold", padding: "6px 14px", borderRadius: "8px", background: totalProgress >= 75 ? "rgba(16,185,129,0.15)" : totalProgress >= 40 ? "rgba(99,102,241,0.15)" : "rgba(245,158,11,0.15)", color: totalProgress >= 75 ? "var(--success)" : totalProgress >= 40 ? "var(--accent)" : "#f59e0b" }}>
+            {totalProgress >= 75 ? "🎓 Graduate / Placement Ready" : totalProgress >= 40 ? "⚡ Internship Eligible" : "📘 Skill Building Stage"}
+          </span>
+        </div>
+
+        {/* DYNAMIC PROGRESS BAR */}
+        <div style={{ width: "100%", height: "16px", background: "rgba(255,255,255,0.08)", borderRadius: "10px", overflow: "hidden", marginBottom: "20px", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <div
+            style={{
+              width: `${totalProgress}%`,
+              height: "100%",
+              background: totalProgress >= 75 ? "linear-gradient(90deg, #10b981, #34d399)" : totalProgress >= 40 ? "linear-gradient(90deg, #6366f1, #818cf8)" : "linear-gradient(90deg, #f59e0b, #fbbf24)",
+              borderRadius: "10px",
+              transition: "width 0.6s ease-in-out"
+            }}
+          />
+        </div>
+
+        {/* ACTIONABLE TO-DO CHECKLIST */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
+          {todoItems.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => {
+                if (item.id === "growth_log") setManualTodoChecked(!manualTodoChecked);
+              }}
+              style={{
+                padding: "12px 16px",
+                background: item.done ? "rgba(16,185,129,0.08)" : "var(--card-item-bg)",
+                border: item.done ? "1px solid rgba(16,185,129,0.3)" : "1px solid var(--card-item-border)",
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                cursor: item.id === "growth_log" ? "pointer" : "default"
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={item.done}
+                readOnly={item.id !== "growth_log"}
+                onChange={(e) => {
+                  if (item.id === "growth_log") setManualTodoChecked(e.target.checked);
+                }}
+                style={{ width: "18px", height: "18px", accentColor: "var(--success)", cursor: "pointer" }}
+              />
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: "13px", color: item.done ? "var(--text-primary)" : "var(--text-secondary)", textDecoration: item.done ? "line-through" : "none" }}>
+                  {item.text}
+                </span>
+              </div>
+              <span style={{ fontSize: "11px", fontWeight: "bold", color: item.done ? "var(--success)" : "var(--text-secondary)" }}>
+                +{item.points}%
+              </span>
+            </div>
+          ))}
         </div>
       </BentoCard>
 
       {/* 2. AI RESUME PARSER - SPANS 2 COLUMNS */}
       <BentoCard colSpan={2} disableTilt={true}>
-        <h3 style={{ ...styles.title, color: "#a78bfa", marginBottom: 15 }}>
-          🧠 AI Resume Analyzer
-        </h3>
+        <ResumeEnhancer />
+      </BentoCard>
 
-        {user.seekingRole && user.seekingRole !== "General Applicant" && (
-          <div style={{ padding: "15px", background: "rgba(167, 139, 250, 0.15)", border: "1px solid rgba(167, 139, 250, 0.4)", borderRadius: "10px", marginBottom: "20px" }}>
-            🎉 You're selected as a <strong style={{ color: "var(--text-primary)" }}>{user.seekingRole}</strong>
-            <br />
-            and this is your ATS score to be that job role: <strong style={{ fontSize: "16px", color: "var(--success)", marginLeft: "4px" }}>{user.atsScore || 85}%</strong>
+      {/* 🐙 GITHUB & LINKEDIN PORTFOLIO INTEGRATION - SPANS 4 COLUMNS */}
+      <BentoCard colSpan={4} disableTilt={true}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <h3 style={{ ...styles.title, color: "var(--accent)" }}>
+              🐙 Connected Accounts & GitHub Portfolio Telemetry
+            </h3>
+            <p style={{ color: theme.colors.textSecondary, fontSize: "14px", margin: "4px 0 0" }}>
+              Connect your public GitHub username to import repositories, run AI portfolio evaluation, and feed code telemetry into your Growth Radar.
+            </p>
+          </div>
+          {ghEval && ghEval.score > 0 && (
+            <div style={{ padding: "8px 16px", background: "rgba(99, 102, 241, 0.12)", border: "1px solid rgba(99, 102, 241, 0.3)", borderRadius: "10px", textAlign: "right" }}>
+              <span style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block" }}>AI GitHub Index</span>
+              <strong style={{ fontSize: "20px", color: "var(--accent)" }}>{ghEval.score} / 100</strong>
+            </div>
+          )}
+        </div>
+
+        {/* SETUP WALKTHROUGH & OAUTH CONNECT BUTTONS */}
+        {(user.githubLocked || (ghUsername && ghRepos.length > 0)) ? (
+          <div style={{ padding: "16px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: "bold", display: "block" }}>
+                🔒 VERIFIED & ONE-TIME LOCKED SOCIAL ACCOUNTS
+              </span>
+              <p style={{ margin: "4px 0 0", color: "var(--text-primary)", fontSize: "14px" }}>
+                GitHub: <strong>@{ghUsername}</strong> {user.linkedinLocked && `• LinkedIn: Connected`}
+              </p>
+            </div>
+            <button
+              onClick={handleRequestSocialReset}
+              disabled={user.socialResetRequest?.status === "PENDING"}
+              style={{ ...theme.button("secondary"), fontSize: "13px" }}
+              className="button-hover"
+            >
+              {user.socialResetRequest?.status === "PENDING"
+                ? "⌛ Link Swap Requested (Pending Coordinator Approval)"
+                : "Request Coordinator to Unlock / Swap Links"}
+            </button>
+          </div>
+        ) : (
+          <div style={{ padding: "20px", background: "var(--card-item-bg)", borderRadius: "14px", border: "1px solid var(--card-item-border)", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 10px 0", color: "var(--text-primary)", fontSize: "16px" }}>
+              🚀 Student Setup Walkthrough — Authenticated Account Connections
+            </h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: "0 0 16px 0", lineHeight: "1.5" }}>
+              To enable progress tracking and AI repository evaluation, connect your official GitHub account below.
+              {stage !== "YEAR_1_2" && " As a 3rd Year / Final Year student, you can also connect your LinkedIn profile."}
+            </p>
+
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              {/* GITHUB OAUTH CONNECT BUTTON - ALL STUDENTS */}
+              <button
+                onClick={() => {
+                  window.location.href = `http://localhost:5000/api/auth/github/connect?studentId=${user.id || user._id}`;
+                }}
+                style={{ padding: "12px 20px", background: "#24292e", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "bold", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                className="button-hover"
+              >
+                🐙 Connect with GitHub (All Students)
+              </button>
+
+              {/* LINKEDIN OAUTH CONNECT BUTTON - 3RD YR INTERN & FINAL YR JOB ONLY */}
+              {stage !== "YEAR_1_2" && (
+                <button
+                  onClick={() => {
+                    window.location.href = `http://localhost:5000/api/auth/linkedin/connect?studentId=${user.id || user._id}`;
+                  }}
+                  style={{ padding: "12px 20px", background: "#0a66c2", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "bold", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  className="button-hover"
+                >
+                  💼 Connect with LinkedIn (Intern Ready)
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        <p style={{ color: theme.colors.textSecondary, marginBottom: 20 }}>
-          Upload your resume (PDF). Our AI will scan it and automatically match you with recruiters looking for your skills.
-        </p>
+        {/* AI EVALUATION SUMMARY & DETECTED SKILLS */}
+        {ghEval && (
+          <div style={{ padding: "16px", background: "var(--card-item-bg)", borderRadius: "12px", border: "1px solid var(--card-item-border)", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 8px 0", color: "var(--text-primary)", fontSize: "15px" }}>🤖 AI Portfolio Feedback</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "0 0 12px 0", lineHeight: "1.5" }}>
+              {ghEval.summary}
+            </p>
+            {ghEval.detectedSkills && ghEval.detectedSkills.length > 0 && (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: "bold" }}>Detected Stack:</span>
+                {ghEval.detectedSkills.map((sk, idx) => (
+                  <span key={idx} style={{ fontSize: "11px", padding: "3px 8px", background: "rgba(16, 185, 129, 0.12)", color: "var(--success)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "4px" }}>
+                    {sk}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        <input
-          type="file"
-          accept=".pdf"
-          onChange={handleFileUpload}
-          style={{ color: "var(--text-primary)" }}
-        />
-
-        {uploading && <p style={{ color: "#a78bfa", marginTop: 10 }}>✨ AI is analyzing your resume...</p>}
+        {/* IMPORTED PUBLIC REPOSITORIES GRID */}
+        {ghRepos.length > 0 && (
+          <div>
+            <h4 style={{ margin: "0 0 12px 0", color: "var(--text-primary)", fontSize: "16px" }}>
+              📦 Public Repositories ({ghRepos.length})
+            </h4>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px", maxHeight: "360px", overflowY: "auto" }}>
+              {ghRepos.map((repo, i) => (
+                <div key={i} style={{ padding: "14px", background: "var(--card-item-bg)", border: "1px solid var(--card-item-border)", borderRadius: "10px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                      <a href={repo.htmlUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", textDecoration: "underline" }}>
+                        {repo.name} ↗
+                      </a>
+                      <span style={{ fontSize: "11px", padding: "2px 6px", background: "rgba(99,102,241,0.12)", color: "var(--accent)", borderRadius: "4px" }}>
+                        {repo.language || "Code"}
+                      </span>
+                    </div>
+                    <p style={{ color: "var(--text-secondary)", fontSize: "12px", margin: "4px 0 10px 0", lineHeight: "1.4" }}>
+                      {repo.description}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-secondary)", paddingTop: "8px", borderTop: "1px solid var(--border)" }}>
+                    <span>⭐ {repo.stars} stars • 🍴 {repo.forks} forks</span>
+                    <span>Pushed: {new Date(repo.pushedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </BentoCard>
 
-      {/* 📢 NEW: AVAILABLE JOBS SECTION - SPANS 2 COLUMNS */}
+      {/* 3. VACANCIES & OPPORTUNITIES BOARD - ADAPTIVE PER STAGE */}
       <BentoCard colSpan={2}>
         <h3 style={{ ...styles.title, color: "#34d399", marginBottom: 20 }}>
-          🔥 Available Job Vacancies
+          {stage === "YEAR_1_2" ? "🔒 Internship Vacancies" : stage === "YEAR_3_INTERN" ? "⚡ 3rd Year 2nd Sem Internships" : "🔥 Graduate Full-Time Vacancies"}
         </h3>
-        {displayJobs.length === 0 ? (
-          <p style={{ color: "#888" }}>No active job postings available.</p>
+
+        {stage === "YEAR_1_2" ? (
+          <div style={{ padding: "20px", background: "var(--card-item-bg)", borderRadius: "12px", border: "1px solid var(--card-item-border)", textAlign: "center" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0 }}>
+              Internship applications open in <strong>3rd Year 2nd Semester</strong>. Focus on logging daily learning activities in your Growth Tracker to raise your ATS score.
+            </p>
+          </div>
+        ) : displayJobs.length === 0 ? (
+          <p style={{ color: "#888" }}>No active vacancy postings available for your stage.</p>
         ) : (
           <div style={styles.grid}>
             {displayJobs.map(job => (
@@ -178,7 +550,7 @@ function UserDashboard() {
                 <div>
                   <h4 style={{ margin: "0 0 5px 0", fontSize: "18px", color: "var(--text-primary)" }}>{job.title}</h4>
                   <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: "bold", background: "rgba(16, 185, 129, 0.12)", padding: "2px 8px", borderRadius: "4px" }}>
-                    {job.salary}
+                    {job.salary} • {job.opportunityType || "INTERNSHIP"}
                   </span>
                   <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "10px" }}>
                     {job.employerId?.name} • {job.location}
@@ -291,13 +663,35 @@ function UserDashboard() {
         </BentoCard>
       )}
 
-      {/* 6. TOOLS */}
-      <BentoCard colSpan={2} disableTilt={true}>
+      {/* 6. CAREER RECOMMENDATIONS */}
+      <BentoCard colSpan={4} disableTilt={true}>
         <CareerForm fullWidth />
       </BentoCard>
-      <BentoCard colSpan={2} disableTilt={true}>
-        <ResumeEnhancer />
-      </BentoCard>
+
+      {/* 📋 INTERNSHIP ELIGIBILITY PORTAL MODAL */}
+      {showEligibilityModal && (
+        <InternEligibilityPortalModal
+          user={user}
+          onClose={() => {
+            setShowEligibilityModal(false);
+            if (user?.id || user?._id) fetchDashboardData(user.id || user._id);
+          }}
+          onUserUpdated={(updated) => {
+            setUser(updated);
+            localStorage.setItem("user", JSON.stringify(updated));
+            if (updated?.id || updated?._id) fetchDashboardData(updated.id || updated._id);
+          }}
+        />
+      )}
+
+      {/* 🎓 INTERN PROGRAM HUB MODAL */}
+      {showInternModal && (
+        <InternProgramModal
+          user={user}
+          onClose={() => setShowInternModal(false)}
+          onUserUpdated={(updated) => setUser(updated)}
+        />
+      )}
     </div>
   );
 }

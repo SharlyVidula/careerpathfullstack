@@ -42,8 +42,12 @@ export default function CareerForm() {
     doc.save(`${data.careerTitle}_recommendation.pdf`);
   };
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isStageLocked = user?.role === "student" && (user?.studentStage === "YEAR_1_2" || !user?.studentStage);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isStageLocked) return;
     setError("");
     setResult(null);
     setLoading(true);
@@ -72,39 +76,58 @@ export default function CareerForm() {
     <div style={styles.container}>
       <h2 style={styles.title}>Get Your Career Recommendation</h2>
 
+      {isStageLocked && (
+        <div style={{ padding: "16px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: "12px", marginBottom: "20px" }}>
+          <h4 style={{ color: "#f59e0b", margin: "0 0 6px 0" }}>🔒 Stage 1 Lock: Recommendation Tool Locked</h4>
+          <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+            Career recommendation inputs are locked for 1st & 2nd Year students. Focus on foundational skill building in your Growth Tracker. Your Academic Coordinator (Senior Lecturer) will unlock recommendation tools in <strong>Stage 2 (3rd Year Intern Ready)</strong>.
+          </p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
           Skills (comma separated)
           <input
-            style={styles.input}
-            placeholder="javascript, design, communication"
+            style={{ ...styles.input, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "text" }}
+            placeholder={isStageLocked ? "🔒 Locked for 1st/2nd Year Students" : "javascript, design, communication"}
             value={skills}
             onChange={(e) => setSkills(e.target.value)}
+            disabled={isStageLocked}
+            readOnly={isStageLocked}
           />
         </label>
 
         <label style={styles.label}>
           Interests (comma separated)
           <input
-            style={styles.input}
-            placeholder="ai, frontend, teaching"
+            style={{ ...styles.input, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "text" }}
+            placeholder={isStageLocked ? "🔒 Locked for 1st/2nd Year Students" : "ai, frontend, teaching"}
             value={interests}
             onChange={(e) => setInterests(e.target.value)}
+            disabled={isStageLocked}
+            readOnly={isStageLocked}
           />
         </label>
 
         <label style={styles.label}>
           Work style (optional)
           <input
-            style={styles.input}
-            placeholder="remote, team player, independent..."
+            style={{ ...styles.input, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "text" }}
+            placeholder={isStageLocked ? "🔒 Locked for 1st/2nd Year Students" : "remote, team player, independent..."}
             value={workStyle}
             onChange={(e) => setWorkStyle(e.target.value)}
+            disabled={isStageLocked}
+            readOnly={isStageLocked}
           />
         </label>
 
-        <button type="submit" style={styles.button} disabled={loading}>
-          {loading ? "Getting recommendation..." : "Get Recommendation"}
+        <button
+          type="submit"
+          style={{ ...styles.button, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "pointer" }}
+          disabled={loading || isStageLocked}
+        >
+          {isStageLocked ? "🔒 Locked for 1st & 2nd Year Students" : loading ? "Getting recommendation..." : "Get Recommendation"}
         </button>
       </form>
 

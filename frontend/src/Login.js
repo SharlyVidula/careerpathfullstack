@@ -29,7 +29,7 @@ export default function Login() {
       // 2. ⭐ REDIRECTION LOGIC (The Fix) ⭐
       const role = res.data.user.role; // Get role from backend
 
-      if (role === "admin") {
+      if (role === "admin" || role === "coordinator") {
         navigate("/admin");
       } else if (role === "employer") {
         navigate("/employer-dashboard"); // ✅ Now Employers go here
@@ -51,8 +51,11 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card} className="card-animate">
-        <h2 style={styles.title}>Login</h2>
-        <p style={styles.subtitle}>Welcome back to CareerClusteryoyo</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "15px" }}>
+          <img src="/lnbti-logo.png" style={{ width: "70px", height: "70px", objectFit: "contain", marginBottom: "8px" }} alt="LNBTI Logo" />
+          <h2 style={{ ...styles.title, margin: 0 }}>LNBTI Progress Portal</h2>
+          <p style={styles.subtitle}>Sign in to your official university portal</p>
+        </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
@@ -83,21 +86,6 @@ export default function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        <div style={styles.oauthContainer}>
-          <p style={styles.oauthText}>Or login with</p>
-          <div style={styles.oauthButtons}>
-            <a href={`${BACKEND_URL}/api/auth/google`} style={styles.oauthBtn}>
-              <FaGoogle style={styles.oauthIcon} /> Google
-            </a>
-            <a href={`${BACKEND_URL}/api/auth/github`} style={styles.oauthBtn}>
-              <FaGithub style={styles.oauthIcon} /> GitHub
-            </a>
-            <a href={`${BACKEND_URL}/api/auth/linkedin`} style={styles.oauthBtn}>
-              <FaLinkedin style={styles.oauthIcon} /> LinkedIn
-            </a>
-          </div>
-        </div>
 
         <p style={styles.footerText}>
           Don't have an account? <Link to="/register" style={styles.link}>Sign up</Link>

@@ -21,8 +21,8 @@ app.set("trust proxy", 1);
 
 // Security & parsing
 app.use(helmet());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(
   cors({
     origin: "*", // you can restrict this later
@@ -84,13 +84,61 @@ app.use("/api/growth", require("./routes/growthRoute"));
 // ✅ AI-based job description match
 app.use("/api/jd", require("./routes/jdMatchRoute"));
 
+// 🐙 GitHub & LinkedIn Portfolio Integration
+app.use("/api/github", require("./routes/githubRoute"));
+
+// 🎓 Internship Program & Diary System
+app.use("/api/intern", require("./routes/internRoutes"));
+
 
 /* ------------ DATABASE CONNECTION ------------ */
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+const connectWithRetry = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10
+    });
+    console.log("✅ MongoDB Connected Successfully");
+
+    // Guarantee default coordinator and admin accounts
+    const User = require("./models/user");
+    await User.findOneAndUpdate(
+      { email: "coordinator@lnbti.edu.lk" },
+      {
+        name: "LNBTI Academic Coordinator",
+        email: "coordinator@lnbti.edu.lk",
+        password: "coordinator123",
+        role: "coordinator",
+        isApproved: true,
+        approvalStatus: "APPROVED"
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    console.log("🎓 Default Coordinator account ready: coordinator@lnbti.edu.lk / coordinator123");
+
+    await User.findOneAndUpdate(
+      { email: "admin@lnbti.edu.lk" },
+      {
+        name: "LNBTI System Administrator",
+        email: "admin@lnbti.edu.lk",
+        password: "admin123",
+        role: "admin",
+        isApproved: true,
+        approvalStatus: "APPROVED"
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    console.log("👑 Default Admin account ready: admin@lnbti.edu.lk / admin123");
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err.message);
+    console.log("🔄 Retrying MongoDB connection in 5 seconds...");
+    setTimeout(connectWithRetry, 5000);
+  }
+};
+
+connectWithRetry();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

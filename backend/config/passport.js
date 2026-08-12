@@ -45,8 +45,8 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID || "dummy",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "dummy",
-      callbackURL: "/api/auth/github/callback",
-      scope: ["user:email"],
+      callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:5000/api/auth/github/callback",
+      scope: ["user:email", "public_repo"],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -55,19 +55,23 @@ passport.use(
         
         if (!user) {
           user = await User.findOne({ email });
-          if (user) {
-            user.githubId = profile.id;
-            await user.save();
-          } else {
-            user = new User({
-              name: profile.displayName || profile.username,
-              email: email,
-              githubId: profile.id,
-              profilePic: profile.photos[0]?.value,
-            });
-            await user.save();
-          }
         }
+        
+        if (!user) {
+          user = new User({
+            name: profile.displayName || profile.username,
+            email: email,
+            githubId: profile.id,
+            githubUsername: profile.username,
+            profilePic: profile.photos?.[0]?.value,
+          });
+        } else {
+          user.githubId = profile.id;
+          user.githubUsername = profile.username;
+        }
+
+        user._tempAccessToken = accessToken;
+        await user.save();
         return done(null, user);
       } catch (err) {
         return done(err, null);
@@ -81,7 +85,7 @@ const linkedinStrategy = new LinkedInStrategy(
   {
     clientID: process.env.LINKEDIN_CLIENT_ID || "dummy",
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "dummy",
-    callbackURL: "/api/auth/linkedin/callback",
+    callbackURL: process.env.LINKEDIN_CALLBACK_URL || "http://localhost:5000/api/auth/linkedin/callback",
     scope: ["openid", "profile", "email"],
     state: true,
   },

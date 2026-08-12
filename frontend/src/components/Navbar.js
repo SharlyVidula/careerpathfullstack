@@ -13,7 +13,7 @@ function Navbar() {
 
   const getDashboardPath = () => {
     if (!user) return "/login";
-    if (user.role === "admin") return "/admin";
+    if (user.role === "admin" || user.role === "coordinator") return "/admin";
     if (user.role === "employer") return "/employer-dashboard";
     return "/user-dashboard";
   };
@@ -21,10 +21,10 @@ function Navbar() {
   return (
     <nav style={styles.nav} className="card-animate">
       <div style={styles.brandRow}>
-        <div style={styles.badge}>CP</div>
+        <img src="/lnbti-logo.png" style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "contain" }} alt="LNBTI Logo" />
         <div>
-          <h2 style={styles.logo}>CareerPath</h2>
-          <p style={styles.subtle}>Future-forward guidance</p>
+          <h2 style={styles.logo}>LNBTI Progress Portal</h2>
+          <p style={styles.subtle}>Lanka Nippon BizTech Institute</p>
         </div>
       </div>
 

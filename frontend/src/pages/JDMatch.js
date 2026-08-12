@@ -24,7 +24,11 @@ export default function JDMatch() {
     return "rgba(239,68,68,0.18)";
   }, [result]);
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isStageLocked = user?.role === "student" && (user?.studentStage === "YEAR_1_2" || !user?.studentStage);
+
   const runMatch = async () => {
+    if (isStageLocked) return;
     if (!resumeText.trim() || !jobDescription.trim()) {
       setError("Please paste both Resume Text and Job Description.");
       return;
@@ -70,11 +74,23 @@ export default function JDMatch() {
         {!!error && <div style={styles.errorBox}>{error}</div>}
       </BentoCard>
 
+      {isStageLocked && (
+        <BentoCard colSpan={4} padding="20px">
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.3)", padding: "16px", borderRadius: "12px" }}>
+            <h4 style={{ color: "#f59e0b", margin: "0 0 6px 0" }}>🔒 Stage 1 Lock: Job Match Tool Locked</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+              Job role matching is locked for 1st & 2nd Year students. Focus on building core technical skills in your Growth Tracker. Your Academic Coordinator (Senior Lecturer) will unlock Job Role Matching in <strong>Stage 2 (3rd Year Intern Ready)</strong>.
+            </p>
+          </div>
+        </BentoCard>
+      )}
+
       <BentoCard colSpan={2} disableTilt={true}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
           <h2 style={{ ...styles.h2, margin: 0 }}>Resume Text</h2>
           <button
-            style={{ ...theme.button("outline"), padding: "6px 12px", fontSize: "12px" }}
+            style={{ ...theme.button("outline"), padding: "6px 12px", fontSize: "12px", opacity: isStageLocked ? 0.5 : 1 }}
+            disabled={isStageLocked}
             onClick={() => {
               try {
                 const u = JSON.parse(localStorage.getItem("user") || "{}");
@@ -94,9 +110,11 @@ export default function JDMatch() {
         <textarea
           value={resumeText}
           onChange={(e) => setResumeText(e.target.value)}
-          placeholder="Paste your resume content here (plain text)."
+          placeholder={isStageLocked ? "🔒 Locked for 1st & 2nd Year Students" : "Paste your resume content here (plain text)."}
           rows={12}
-          style={styles.textarea}
+          disabled={isStageLocked}
+          readOnly={isStageLocked}
+          style={{ ...styles.textarea, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "text" }}
         />
       </BentoCard>
 
@@ -105,20 +123,22 @@ export default function JDMatch() {
         <textarea
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
-          placeholder="Paste the job role description here."
+          placeholder={isStageLocked ? "🔒 Locked for 1st & 2nd Year Students" : "Paste the job role description here."}
           rows={12}
-          style={styles.textarea}
+          disabled={isStageLocked}
+          readOnly={isStageLocked}
+          style={{ ...styles.textarea, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "text" }}
         />
       </BentoCard>
 
       <div style={{ ...styles.actionsRow, gridColumn: "1 / -1" }}>
         <button
-          style={styles.btnPrimary}
+          style={{ ...styles.btnPrimary, opacity: isStageLocked ? 0.5 : 1, cursor: isStageLocked ? "not-allowed" : "pointer" }}
           onClick={runMatch}
-          disabled={loading}
+          disabled={loading || isStageLocked}
           className="button-hover"
         >
-          {loading ? "Matching…" : "Run JD Match"}
+          {isStageLocked ? "🔒 Locked for 1st & 2nd Year Students" : loading ? "Matching..." : "Run Job Match"}
         </button>
       </div>
 

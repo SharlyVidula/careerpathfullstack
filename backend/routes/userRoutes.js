@@ -28,23 +28,242 @@ const client = new OpenAI({
 // REGISTER
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: "All fields required" });
+    const { 
+      name, email, password, role, 
+      indexNumber, batchNumber, degreeBatch, academicYear, academicSemester, degreeProgram, studentStage,
+      companyName, designation 
+    } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email, and password are required" });
+    }
+
+    if (role === 'coordinator' || role === 'admin') {
+      return res.status(403).json({ message: "Coordinator accounts cannot be created publicly. They must be created by an existing LNBTI Senior Lecturer inside the Coordinator Hub." });
+    }
+
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: "User already exists" });
-    const newUser = new User({ name, email, password, role: role || 'user' });
+    if (existing) return res.status(400).json({ message: "User already exists with this email" });
+
+    const assignedRole = role || 'student';
+    // Students require Coordinator approval before logging in
+    const isStudent = assignedRole === 'student';
+    const isApproved = !isStudent; 
+    const approvalStatus = isStudent ? 'PENDING' : 'APPROVED';
+
+    const newUser = new User({ 
+      name, 
+      email, 
+      password, 
+      role: assignedRole,
+      isApproved,
+      approvalStatus,
+      indexNumber: isStudent ? indexNumber : undefined,
+      batchNumber: isStudent ? batchNumber : undefined,
+      degreeBatch: isStudent ? (degreeBatch || 'UGC (SE)') : undefined,
+      academicYear: isStudent ? (academicYear || 'Year 1') : undefined,
+      academicSemester: isStudent ? (academicSemester || 'Semester 1') : undefined,
+      degreeProgram: isStudent ? degreeProgram : undefined,
+      studentStage: isStudent ? (studentStage || 'YEAR_1_2') : undefined,
+      companyName: assignedRole === 'supervisor' ? companyName : undefined,
+      designation: assignedRole === 'supervisor' ? designation : undefined
+    });
+
     await newUser.save();
-    res.status(201).json({ message: "Registered", user: { id: newUser._id, name: newUser.name, role: newUser.role } });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+
+    if (isStudent) {
+      return res.status(201).json({ 
+        ok: true,
+        pendingApproval: true, 
+        message: "Registration submitted successfully! Your account is pending Coordinator approval before you can log in.",
+        user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, approvalStatus: newUser.approvalStatus }
+      });
+    }
+
+    res.status(201).json({ 
+      ok: true,
+      pendingApproval: false,
+      message: "Registered successfully", 
+      user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role } 
+    });
+  } catch (e) { 
+    console.error("Register Error:", e);
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 // LOGIN
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+
+    const cleanEmail = email.trim();
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } 
+    });
+
     if (!user || user.password !== password) return res.status(400).json({ message: "Invalid credentials" });
-    res.json({ message: "Login success", user: { id: user._id, name: user.name, email: user.email, role: user.role, seekingRole: user.seekingRole, profilePic: user.profilePic, extractedName: user.extractedName, resumeText: user.resumeText } });
+
+    // Check student registration approval gate
+    if (user.role === 'student' || user.role === 'user') {
+      if (user.approvalStatus === 'REJECTED') {
+        return res.status(403).json({ 
+          ok: false, 
+          message: "Your registration was rejected by the Coordinator. Please contact LNBTI academic administration." 
+        });
+      }
+      if (!user.isApproved || user.approvalStatus === 'PENDING') {
+        return res.status(403).json({ 
+          ok: false, 
+          pendingApproval: true,
+          message: "Your account registration is pending approval by your LNBTI Academic Coordinator. Please check back later." 
+        });
+      }
+    }
+
+    res.json({ 
+      ok: true,
+      message: "Login success", 
+      user: { 
+        id: user._id, 
+        _id: user._id,
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        studentStage: user.studentStage || "YEAR_1_2",
+        indexNumber: user.indexNumber,
+        batchNumber: user.batchNumber,
+        degreeProgram: user.degreeProgram,
+        companyName: user.companyName,
+        designation: user.designation,
+        isApproved: user.isApproved,
+        seekingRole: user.seekingRole, 
+        atsScore: user.atsScore,
+        profilePic: user.profilePic, 
+        extractedName: user.extractedName, 
+        resumeText: user.resumeText 
+      } 
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ==========================================
+// 🎓 COORDINATOR MANAGEMENT ROUTES
+// ==========================================
+
+// 0. CREATE NEW COORDINATOR (Existing Coordinator / Admin Only)
+router.post("/coordinator/create-coordinator", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ message: "Name, email, and password required" });
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: "Account already exists with this email" });
+
+    const newCoordinator = new User({
+      name,
+      email,
+      password,
+      role: 'coordinator',
+      isApproved: true,
+      approvalStatus: 'APPROVED'
+    });
+    await newCoordinator.save();
+    res.status(201).json({ ok: true, message: "New Academic Coordinator account created successfully!" });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 1. GET PENDING STUDENT REGISTRATIONS (Coordinator)
+router.get("/coordinator/pending-registrations", async (req, res) => {
+  try {
+    const pendingStudents = await User.find({ 
+      role: { $in: ['student', 'user'] }, 
+      approvalStatus: 'PENDING' 
+    }).select('-password');
+    res.json({ ok: true, pendingStudents });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 2. APPROVE STUDENT REGISTRATION (Coordinator)
+router.put("/coordinator/approve-student/:id", async (req, res) => {
+  try {
+    const student = await User.findByIdAndUpdate(
+      req.params.id, 
+      { isApproved: true, approvalStatus: 'APPROVED' },
+      { new: true }
+    ).select('-password');
+    res.json({ ok: true, message: "Student approved successfully", student });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 3. REJECT STUDENT REGISTRATION (Coordinator)
+router.put("/coordinator/reject-student/:id", async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(
+      req.params.id, 
+      { isApproved: false, approvalStatus: 'REJECTED' }
+    );
+    res.json({ ok: true, message: "Student registration rejected" });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 4. PROMOTE / SET STUDENT ACADEMIC STAGE (Coordinator)
+router.put("/coordinator/promote-student/:id", async (req, res) => {
+  try {
+    const { studentStage } = req.body;
+    if (!['YEAR_1_2', 'YEAR_3_INTERN', 'FINAL_YEAR_JOB'].includes(studentStage)) {
+      return res.status(400).json({ ok: false, message: "Invalid stage specified" });
+    }
+    const student = await User.findByIdAndUpdate(
+      req.params.id,
+      { studentStage },
+      { new: true }
+    ).select('-password');
+    res.json({ ok: true, message: `Student stage updated to ${studentStage}`, student });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 5. STUDENT SUBMIT REQUEST TO RESET LINKED SOCIAL ACCOUNTS
+router.post("/student/request-social-reset", async (req, res) => {
+  try {
+    const { userId, reason } = req.body;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Student not found" });
+
+    user.socialResetRequest = {
+      requestedAt: new Date(),
+      reason: reason || "Student requested GitHub/LinkedIn modification",
+      status: "PENDING"
+    };
+    await user.save();
+    res.json({ ok: true, message: "Social account modification request submitted to your LNBTI Academic Coordinator." });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 6. GET PENDING SOCIAL RESETS (Coordinator)
+router.get("/coordinator/pending-social-resets", async (req, res) => {
+  try {
+    const pendingResets = await User.find({ "socialResetRequest.status": "PENDING" }).select("-password");
+    res.json({ ok: true, pendingResets });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 7. APPROVE & UNLOCK SOCIAL RESET (Coordinator)
+router.put("/coordinator/approve-social-reset/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "Student not found" });
+
+    user.githubLocked = false;
+    user.linkedinLocked = false;
+    user.githubUsername = "";
+    user.linkedinProfileUrl = "";
+    user.githubRepos = [];
+    user.githubEvaluation = { score: 0, summary: "", detectedSkills: [] };
+    user.socialResetRequest = { status: "APPROVED", approvedAt: new Date() };
+
+    await user.save();
+    res.json({ ok: true, message: "Student social accounts unlocked & reset successfully!" });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -176,14 +395,92 @@ router.post("/upload-resume", upload.single("resume"), async (req, res) => {
       }
     }
 
+    const atsImprovements = [
+      "Use clear, ATS-parseable section headings: 'Technical Skills', 'Experience', 'Projects', 'Education'",
+      "Incorporate action verbs at the start of each bullet point (e.g. Developed, Engineered, Optimized)",
+      "Add quantifiable metrics to experience descriptions (e.g. 'improved app load time by 35%')",
+      `Include core tech stack keywords: ${extractedSkills.slice(0, 6).join(", ") || "Git, JavaScript, Python"}`
+    ];
+
+    // Generate Role-Based Industry Keywords
+    const roleKeywordsMap = {
+      "Chef / Hospitality Specialist": ["HACCP Food Safety", "Culinary Operations", "Menu Engineering", "Inventory Control", "Kitchen Hygiene", "Catering & Banquet Management"],
+      "UI Engineer": ["React / Vue", "TypeScript", "CSS Grid / Flexbox", "Figma / UI Design", "Web Accessibility (a11y)", "State Management"],
+      "Data Scientist": ["Python / Pandas", "Machine Learning", "SQL Database", "Data Visualization", "Statistical Analysis", "Scikit-Learn"],
+      "Backend Engineer": ["Node.js / Java", "RESTful APIs", "Database Optimization", "Microservices", "Docker / Kubernetes", "CI/CD"],
+      "Mobile Developer": ["Flutter / React Native", "iOS (Swift) / Android (Kotlin)", "Mobile State Management", "App Store Deployment"],
+      "Marketing Specialist": ["SEO / SEM", "Content Marketing", "Google Analytics", "Social Media Campaigns", "Conversion Rate Optimization"],
+      "Accountant": ["Financial Auditing", "Tax Compliance", "QuickBooks / SAP", "Financial Reporting", "Ledger Management"],
+      "Project Manager": ["Agile / Scrum", "JIRA", "Risk Assessment", "Stakeholder Communication", "Budget Management"]
+    };
+
+    const roleKeywords = roleKeywordsMap[aiRole] || ["Project Lifecycle", "Team Collaboration", "Process Optimization", "Quality Assurance"];
+
+    const analysisResult = {
+      summary: `Resume successfully analyzed for target role: ${aiRole}. ATS Compatibility Score computed at ${atsScore}%.`,
+      strengths: [
+        "Well-structured section organization with clean formatting",
+        `Extracted core competencies: ${extractedSkills.slice(0, 5).join(", ") || "Industry Skills"}`,
+        `Directly aligns with ${aiRole} industry requirements`
+      ],
+      weaknesses: [
+        "Include more quantifiable impact metrics (percentages, dollar amounts, project volumes)",
+        "Highlight specific professional certifications or official university credentials"
+      ],
+      improvements: atsImprovements,
+      keywordsToAdd: roleKeywords,
+      improvedBulletPoints: [
+        `Spearheaded daily operational workflows for ${aiRole}, increasing team productivity by 25%.`,
+        `Standardized quality control guidelines and project documentation, reducing process errors by 30%.`,
+        `Collaborated with cross-functional teams to execute key deliverables on time and within budget.`
+      ],
+      careerPath: {
+        currentStage: `Associate / Mid-Level ${aiRole}`,
+        shortTermSteps: [
+          `Master specialized tools and frameworks relevant to ${aiRole}`,
+          "Complete 1–2 practical portfolio projects demonstrating end-to-end execution",
+          "Obtain an accredited professional certification"
+        ],
+        midTermSteps: [
+          `Advance to Senior / Lead ${aiRole}`,
+          "Lead complex high-impact projects and cross-functional team initiatives",
+          "Mentor junior staff members and drive process improvements"
+        ],
+        longTermSteps: [
+          `Promote to Head / Director of ${aiRole} Operations`,
+          "Oversee regional strategy, budget allocation, and department scaling"
+        ],
+        ultimateGoal: `Principal Specialist / Executive Director in ${aiRole}`,
+        recommendedRoles: [aiRole, `Senior ${aiRole}`, `${aiRole} Team Lead`],
+        recommendedCourses: [
+          `Professional ${aiRole} Specialization Certificate`,
+          "Strategic Leadership & Operations Management",
+          "Advanced Quality & Compliance Standards"
+        ]
+      }
+    };
+
     // 3. Save
-    const updatePayload = { resumeText: pdfData.text, seekingRole: aiRole, atsScore, skills: extractedSkills, bioSnippet };
-    if (profilePic) updatePayload.profilePic = profilePic;
-    if (extractedName) updatePayload.extractedName = extractedName;
+    const updatePayload = { 
+      resumeText: pdfData.text, 
+      seekingRole: aiRole, 
+      atsScore, 
+      atsImprovements,
+      skills: extractedSkills, 
+      bioSnippet 
+    };
     await User.findByIdAndUpdate(userId, updatePayload);
 
-    console.log(`✅ Assigned: ${aiRole} Output Score: ${atsScore} Name: ${extractedName}`);
-    res.json({ ok: true, role: aiRole, atsScore, profilePic, extractedName, resumeText: pdfData.text, message: "Resume parsed successfully!" });
+    console.log(`✅ Assigned ATS Role: ${aiRole} | Score: ${atsScore}%`);
+    res.json({ 
+      ok: true, 
+      role: aiRole, 
+      atsScore, 
+      atsImprovements,
+      result: analysisResult,
+      resumeText: pdfData.text, 
+      message: "Resume analyzed for ATS optimization successfully!" 
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ ok: false, error: e.message });

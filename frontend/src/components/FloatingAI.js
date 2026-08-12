@@ -26,7 +26,7 @@ export default function FloatingAI() {
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState([
-        { role: "system", content: "Hi! I'm your 2026 Generative AI Assistant. Ask me anything about your career or CV!" }
+        { role: "system", content: "Konnichiwa! I'm your LNBTI Progress Assistant. Ask me anything about your academic stage, portfolio telemetry, or career recommendations!" }
     ]);
     const messagesEndRef = useRef(null);
 
@@ -74,7 +74,7 @@ export default function FloatingAI() {
         } catch (error) {
             setMessages(prev => {
                 const filtered = prev.filter(m => !m.isThinking);
-                return [...filtered, { role: "system", content: "Error connecting to AI. Please try again later." }];
+                return [...filtered, { role: "system", content: "Error connecting to LNBTI AI. Please try again later." }];
             });
         }
     };
@@ -103,8 +103,9 @@ export default function FloatingAI() {
                     ...theme.glassPanel("15px"), display: "flex", flexDirection: "column", zIndex: 9999,
                     animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards", transformOrigin: "bottom right"
                 }}>
-                    <div style={{ padding: "15px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--accent)" }}>
-                        ✦ AI Interface
+                    <div style={{ padding: "15px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <img src="/lnbti-logo.png" style={{ width: "22px", height: "22px", borderRadius: "50%", objectFit: "contain" }} alt="LNBTI Logo" />
+                        <span>✦ LNBTI Progress Assistant</span>
                     </div>
 
                     <div style={{ flex: 1, overflowY: "auto", padding: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>

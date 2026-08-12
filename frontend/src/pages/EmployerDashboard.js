@@ -14,7 +14,8 @@ export default function EmployerDashboard() {
   const [loading, setLoading] = useState(true);
 
   // 🆕 State for Job Form
-  const [jobForm, setJobForm] = useState({ title: "", description: "", salary: "", location: "" });
+  const [jobForm, setJobForm] = useState({ title: "", description: "", salary: "", location: "", opportunityType: "INTERNSHIP", targetStage: "YEAR_3_INTERN" });
+  const [stageFilter, setStageFilter] = useState("ALL");
   const [deleteModal, setDeleteModal] = useState({ show: false, jobId: null });
   const [candidateModal, setCandidateModal] = useState({ show: false, candidate: null });
 
@@ -104,6 +105,8 @@ export default function EmployerDashboard() {
       addToast("Failed to remove vacancy", "error");
     }
   };
+
+  if (!user) return null;
 
   return (
     <div className="bento-grid" style={styles.page}>
@@ -213,27 +216,27 @@ export default function EmployerDashboard() {
 
       {/* Header Card - Spans 4 Columns */}
       <BentoCard colSpan={4} padding="32px">
-        <h2 style={styles.title}>Employer Portal</h2>
-        <p style={styles.subText}>Welcome, {user?.name}. Manage recruitment and vacancies.</p>
+        <h2 style={styles.title}>Company Supervisor Portal</h2>
+        <p style={styles.subText}>Welcome, {user?.name} {user?.companyName && `(${user.companyName})`}. Recruit LNBTI Interns & Graduates.</p>
         <div style={styles.pillRow}>
-          <span style={styles.pillSecondary}>Recruiter Access</span>
+          <span style={styles.pillSecondary}>Industry Partner / Supervisor</span>
         </div>
       </BentoCard>
 
       {/* 📢 NEW SECTION: Post a Job Vacancy - Spans 2 Columns */}
       <BentoCard colSpan={2} disableTilt={true}>
-        <h3 style={{ ...styles.title, marginBottom: 20, color: "#34d399" }}>📢 Post a New Vacancy</h3>
+        <h3 style={{ ...styles.title, marginBottom: 20, color: "#34d399" }}>📢 Post Internship / Job Vacancy</h3>
         <form onSubmit={handlePostJob} style={styles.formGrid}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <input
-              placeholder="Job Title (e.g. Head Chef)"
+              placeholder="Position Title (e.g. Software Intern)"
               value={jobForm.title}
               onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
               style={styles.input}
               required
             />
             <input
-              placeholder="Salary (e.g. $4000/mo)"
+              placeholder="Allowance / Salary"
               value={jobForm.salary}
               onChange={(e) => setJobForm({ ...jobForm, salary: e.target.value })}
               style={styles.input}
@@ -241,8 +244,27 @@ export default function EmployerDashboard() {
             />
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <select
+              value={jobForm.opportunityType}
+              onChange={(e) => setJobForm({ ...jobForm, opportunityType: e.target.value })}
+              style={{ ...styles.input, flex: 1 }}
+            >
+              <option value="INTERNSHIP">Internship (3rd Yr 2nd Sem)</option>
+              <option value="FULL_TIME">Full-Time Job (Graduate)</option>
+            </select>
+            <select
+              value={jobForm.targetStage}
+              onChange={(e) => setJobForm({ ...jobForm, targetStage: e.target.value })}
+              style={{ ...styles.input, flex: 1 }}
+            >
+              <option value="YEAR_3_INTERN">3rd Year Intern Ready</option>
+              <option value="FINAL_YEAR_JOB">Final Year Job Expecting</option>
+              <option value="ALL">All Eligible Students</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
             <input
-              placeholder="Location (e.g. Colombo / Remote)"
+              placeholder="Location (e.g. Colombo / Hybrid)"
               value={jobForm.location}
               onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
               style={styles.input}
@@ -250,13 +272,13 @@ export default function EmployerDashboard() {
             />
           </div>
           <textarea
-            placeholder="Job Description & Requirements..."
+            placeholder="Job Description, Tech Stack & Requirements..."
             value={jobForm.description}
             onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })}
             style={{ ...styles.input, height: '80px', resize: 'none' }}
             required
           />
-          <button type="submit" style={styles.postBtn} className="button-hover">Submit for Approval</button>
+          <button type="submit" style={styles.postBtn} className="button-hover">Submit for Coordinator Approval</button>
         </form>
       </BentoCard>
 

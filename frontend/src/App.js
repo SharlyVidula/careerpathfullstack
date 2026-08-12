@@ -33,11 +33,10 @@ function App() {
             <Navbar />
 
             <header style={styles.header}>
-              <div style={styles.badge}>Career navigation</div>
-              <h1 style={styles.title}>Design your next move</h1>
+              <div style={styles.badge}>Lanka Nippon BizTech Institute</div>
+              <h1 style={styles.title}>LNBTI Progress Portal</h1>
               <p style={styles.subtitle}>
-                A calm, professional space to create an account, log in, and uncover tailored
-                career recommendations crafted around your strengths.
+                Official University Platform for Academic Guidance, Portfolio Telemetry, and Internship Placement matching.
               </p>
             </header>
 

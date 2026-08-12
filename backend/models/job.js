@@ -6,13 +6,27 @@ const jobSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
+  supervisorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
   title: { type: String, required: true },
   description: { type: String, required: true },
   salary: { type: String, required: true },
   location: { type: String, required: true },
+  opportunityType: {
+    type: String,
+    enum: ["INTERNSHIP", "FULL_TIME"],
+    default: "INTERNSHIP"
+  },
+  targetStage: {
+    type: String,
+    enum: ["YEAR_3_INTERN", "FINAL_YEAR_JOB", "ALL"],
+    default: "YEAR_3_INTERN"
+  },
   status: {
     type: String,
-    enum: ["pending", "approved", "rejected"],
+    enum: ["pending", "approved", "rejected", "pending_coordinator"],
     default: "pending"
   },
   applyClicks: { type: Number, default: 0 }
