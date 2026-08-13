@@ -58,7 +58,20 @@ async function seed() {
       approvalStatus: "APPROVED"
     });
 
-    // Category 4: 3rd Year Intern Ready Student
+    // Category 6: Industry Supervisor (Created early to reference in student assignments)
+    const supervisor = await User.create({
+      name: "David Miller (Supervisor)",
+      email: "supervisor@techcorp.lk",
+      password: "Password123!",
+      role: "supervisor",
+      companyName: "TechCorp Systems",
+      designation: "Senior Software Architect",
+      phone: "+94 77 123 4567",
+      isApproved: true,
+      approvalStatus: "APPROVED"
+    });
+
+    // Category 4: 3rd Year Intern Ready Students (Assigned to Supervisor)
     const student3 = await User.create({
       name: "Sharly Vidula (3rd Yr Intern)",
       email: "student3@lnbti.edu.lk",
@@ -75,8 +88,45 @@ async function seed() {
       eligibilityStatus: "APPROVED",
       atsScore: 88,
       seekingRole: "Software Engineering Intern",
+      assignedSupervisor: supervisor._id,
       isApproved: true,
       approvalStatus: "APPROVED"
+    });
+
+    const student3_2 = await User.create({
+      name: "Nipuna Perera (3rd Yr Intern)",
+      email: "nipuna@lnbti.edu.lk",
+      password: "Password123!",
+      role: "student",
+      indexNumber: "UGC0323028",
+      batchNumber: "SE3",
+      degreeBatch: "UGC (SE)",
+      academicYear: "Year 3",
+      academicSemester: "Semester 2",
+      studentStage: "YEAR_3_INTERN",
+      jlptLevel: "N3",
+      gpa: 3.80,
+      eligibilityStatus: "APPROVED",
+      atsScore: 91,
+      seekingRole: "Full-Stack Web Engineering Intern",
+      assignedSupervisor: supervisor._id,
+      isApproved: true,
+      approvalStatus: "APPROVED"
+    });
+
+    // Create Connection Requests (ACCEPTED)
+    await Request.create({
+      employerId: supervisor._id,
+      employeeId: student3._id,
+      status: "ACCEPTED",
+      requestedByRole: "supervisor"
+    });
+
+    await Request.create({
+      employerId: supervisor._id,
+      employeeId: student3_2._id,
+      status: "ACCEPTED",
+      requestedByRole: "supervisor"
     });
 
     // Category 5: 4th Year Graduating Student
@@ -93,19 +143,6 @@ async function seed() {
       studentStage: "FINAL_YEAR_JOB",
       atsScore: 92,
       seekingRole: "Associate Software Engineer",
-      isApproved: true,
-      approvalStatus: "APPROVED"
-    });
-
-    // Category 6: Industry Supervisor
-    const supervisor = await User.create({
-      name: "David Miller (Supervisor)",
-      email: "supervisor@techcorp.lk",
-      password: "Password123!",
-      role: "supervisor",
-      companyName: "TechCorp Systems",
-      designation: "Senior Software Architect",
-      phone: "+94 77 123 4567",
       isApproved: true,
       approvalStatus: "APPROVED"
     });

@@ -112,6 +112,7 @@ Return ONLY valid JSON in this exact structure:
     // 3. Save to User document with ONE-TIME LOCK
     user.githubUsername = cleanUsername;
     if (linkedinProfileUrl) user.linkedinProfileUrl = linkedinProfileUrl.trim();
+    if (!user.githubConnectedAt) user.githubConnectedAt = new Date();
     user.githubLocked = true;
     if (user.linkedinProfileUrl) user.linkedinLocked = true;
     user.githubRepos = formattedRepos;
@@ -220,6 +221,119 @@ router.get("/portfolio", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/github/git-pushes?userId=...
+ * Fetches real-time Git Push telemetry events for the user's connected GitHub account,
+ * calculates a dynamic Git Push Activity score (0-100%), updates GrowthProgress skills/git telemetry,
+ * and returns detailed push events.
+ */
+router.get("/git-pushes", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ ok: false, message: "userId is required" });
+
+    const user = await User.findById(userId).select("githubUsername githubRepos githubEvaluation githubConnectedAt lastLoginAt createdAt");
+    if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+
+    if (!user.githubUsername) {
+      return res.json({
+        ok: true,
+        connected: false,
+        message: "No GitHub account connected yet. Authenticate your GitHub account to sync live Git Pushes into the Donut Chart.",
+        githubUsername: "",
+        gitPushesCount: 0,
+        gitPushScore: 0,
+        recentPushes: [],
+        lastPushDate: null,
+        trackingStart: null
+      });
+    }
+
+    const username = user.githubUsername;
+    const trackingStart = user.githubConnectedAt || user.lastLoginAt || user.createdAt || new Date();
+    const startTimeMs = new Date(trackingStart).getTime() - 5 * 60 * 1000; // 5-min grace window
+
+    let pushEvents = [];
+    let reposPushed = new Set();
+    let totalCommitCount = 0;
+
+    try {
+      // 1. Fetch public events from GitHub API
+      const eventsRes = await axios.get(`https://api.github.com/users/${username}/events/public?per_page=50`, {
+        headers: { "User-Agent": "LNBTI-Career-Path-System" },
+        timeout: 6000
+      });
+
+      const events = eventsRes.data || [];
+      
+      // Filter PushEvents strictly AFTER connecting/logging in
+      const pushFilter = events.filter(e => {
+        if (e.type !== "PushEvent") return false;
+        const pushTime = new Date(e.created_at).getTime();
+        return pushTime >= startTimeMs;
+      });
+
+      pushEvents = pushFilter.map(e => {
+        const repoName = e.repo?.name || "Repository";
+        reposPushed.add(repoName);
+        const commits = e.payload?.commits || [];
+        totalCommitCount += commits.length || 1;
+        const headCommitMsg = commits.length > 0 ? commits[commits.length - 1].message : "Git commit push";
+        return {
+          id: e.id,
+          repoName,
+          commitCount: commits.length || 1,
+          commitMessage: headCommitMsg,
+          pushedAt: e.created_at,
+          branch: (e.payload?.ref || "refs/heads/main").replace("refs/heads/", "")
+        };
+      });
+    } catch (ghErr) {
+      console.warn("GitHub events fetch fallback:", ghErr.message);
+    }
+
+    const gitPushesCount = pushEvents.length;
+    const reposCount = (user.githubRepos && user.githubRepos.length) || reposPushed.size;
+    const repoScore = user.githubEvaluation?.score || 75;
+
+    // Calculate dynamic Git Push Activity score (0 to 100%) based ONLY on post-connection/login pushes
+    let calculatedScore = 0;
+    if (gitPushesCount > 0) {
+      calculatedScore = Math.min(100, Math.max(40, (gitPushesCount * 15) + (totalCommitCount * 5)));
+    } else {
+      // If connected but no pushes made since login/connecting, score is baseline
+      calculatedScore = 15; 
+    }
+
+    const gitPushScore = Math.round(calculatedScore);
+    const lastPushDate = pushEvents.length > 0 ? pushEvents[0].pushedAt : null;
+
+    // Sync calculated git push score into GrowthProgress model for the student
+    const GrowthProgress = require("../models/growthProgress");
+    const growthDoc = await GrowthProgress.findOne({ userId });
+    if (growthDoc) {
+      growthDoc.progress.skills = gitPushScore;
+      await growthDoc.save();
+    }
+
+    res.json({
+      ok: true,
+      connected: true,
+      githubUsername: username,
+      gitPushesCount,
+      totalCommitCount,
+      gitPushScore,
+      recentPushes: pushEvents.slice(0, 5),
+      lastPushDate,
+      trackingStart,
+      message: `⚡ Live telemetry synced! Detected ${gitPushesCount} Git push events performed since account connection / login.`
+    });
+  } catch (err) {
+    console.error("Git Pushes API error:", err);
+    res.status(500).json({ ok: false, message: err.message });
   }
 });
 

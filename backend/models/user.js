@@ -86,6 +86,8 @@ const userSchema = new mongoose.Schema({
   // 🔗 CONNECTED ACCOUNTS & PORTFOLIO TELEMETRY (ALL STUDENTS) 🔗
   githubUsername: { type: String },
   linkedinProfileUrl: { type: String },
+  githubConnectedAt: { type: Date },
+  lastLoginAt: { type: Date },
   githubLocked: { type: Boolean, default: false },
   linkedinLocked: { type: Boolean, default: false },
   socialResetRequest: {

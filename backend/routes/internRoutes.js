@@ -3,6 +3,9 @@ const mongoose = require("mongoose");
 const router = express.Router();
 const User = require("../models/user");
 const InternDiary = require("../models/internDiary");
+const SupervisorLog = require("../models/supervisorLog");
+const Request = require("../models/request");
+const Job = require("../models/job");
 const { sendMissingDiaryEmail } = require("../services/outlookMailer");
 
 // Helper function to evaluate eligibility
@@ -493,7 +496,7 @@ router.put("/coordinator/assign-supervisor", async (req, res) => {
   }
 });
 
-// GET DUAL LOGBOOK TELEMETRY & AI VERDICT (Coordinator Monitoring)
+// GET DUAL LOGBOOK TELEMETRY & AI VERDICT (Coordinator & Supervisor Monitoring)
 router.get("/coordinator/dual-telemetry/:studentId", async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -504,6 +507,7 @@ router.get("/coordinator/dual-telemetry/:studentId", async (req, res) => {
     }
 
     const diaryEntries = await InternDiary.find({ studentId }).sort({ dayNumber: 1 });
+    const supervisorLogs = await SupervisorLog.find({ studentId }).sort({ createdAt: -1 });
 
     const totalHours = diaryEntries.reduce((sum, e) => sum + (e.hoursWorked || 8), 0);
     const submittedDaysCount = diaryEntries.length;
@@ -523,6 +527,7 @@ router.get("/coordinator/dual-telemetry/:studentId", async (req, res) => {
       student,
       supervisor: student.assignedSupervisor,
       diaryEntries,
+      supervisorLogs,
       totalHoursLogged: totalHours,
       submittedDaysCount,
       aiVerdict
@@ -539,7 +544,7 @@ router.get("/supervisor/my-interns/:supervisorId", async (req, res) => {
 
     const directInterns = await User.find({ assignedSupervisor: supervisorId }).select("-password");
 
-    const acceptedRequests = await Request.find({ employerId: supervisorId, status: "ACCEPTED" });
+    const acceptedRequests = await Request.find({ employerId: supervisorId, status: { $in: ["ACCEPTED", "APPROVED"] } });
     const requestStudentIds = acceptedRequests.map(r => r.employeeId);
 
     const matchedJobs = await Job.find({ supervisorId, isMatched: true });
@@ -554,6 +559,79 @@ router.get("/supervisor/my-interns/:supervisorId", async (req, res) => {
     const allInterns = await User.find({ _id: { $in: allStudentIds } }).select("-password");
 
     res.json({ ok: true, interns: allInterns });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+// ==========================================
+// ✍️ 4. SUPERVISOR LOG RECORD & EVALUATION ROUTES
+// ==========================================
+
+// CREATE SUPERVISOR LOG RECORD / EVALUATION REMARK ABOUT STUDENT
+router.post("/supervisor/log-record", async (req, res) => {
+  try {
+    const { studentId, supervisorId, title, remarks, performanceRating, status } = req.body;
+
+    if (!studentId || !supervisorId || !remarks) {
+      return res.status(400).json({ ok: false, message: "studentId, supervisorId, and remarks are required." });
+    }
+
+    const logRecord = await SupervisorLog.create({
+      studentId,
+      supervisorId,
+      title: title || "Daily Internship Log & Performance Record",
+      remarks,
+      performanceRating: Number(performanceRating || 5),
+      status: status || "EXCELLENT",
+      logDate: new Date().toISOString().split("T")[0]
+    });
+
+    res.json({
+      ok: true,
+      message: "✍️ Supervisor log record successfully created and saved for student!",
+      logRecord
+    });
+  } catch (err) {
+    console.error("Create Supervisor Log Error:", err);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+// GET ALL SUPERVISOR LOG RECORDS FOR A STUDENT
+router.get("/supervisor/log-records/:studentId", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const logs = await SupervisorLog.find({ studentId }).sort({ createdAt: -1 });
+
+    res.json({ ok: true, logs });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+// UPDATE SUPERVISOR COMMENTS & STATUS ON INDIVIDUAL DAILY DIARY ENTRY
+router.put("/supervisor/diary-comment", async (req, res) => {
+  try {
+    const { diaryId, supervisorComments, status } = req.body;
+    if (!diaryId) {
+      return res.status(400).json({ ok: false, message: "diaryId is required" });
+    }
+
+    const updatedEntry = await InternDiary.findByIdAndUpdate(
+      diaryId,
+      {
+        ...(supervisorComments !== undefined && { supervisorComments }),
+        ...(status !== undefined && { status })
+      },
+      { new: true }
+    );
+
+    res.json({
+      ok: true,
+      message: "Supervisor comments updated successfully on diary entry!",
+      entry: updatedEntry
+    });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

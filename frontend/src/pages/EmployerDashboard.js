@@ -22,6 +22,7 @@ export default function EmployerDashboard() {
   const [candidateModal, setCandidateModal] = useState({ show: false, candidate: null, loading: false, report: null });
   const [myInterns, setMyInterns] = useState([]);
   const [dualTelemetryModal, setDualTelemetryModal] = useState({ show: false, data: null, loading: false });
+  const [logModal, setLogModal] = useState({ show: false, student: null, title: "Daily Internship Log & Performance Record", remarks: "", performanceRating: 5, status: "EXCELLENT", saving: false });
 
   const openCandidateModal = async (c) => {
     setCandidateModal({ show: true, candidate: c, loading: true, report: null });
@@ -61,6 +62,40 @@ export default function EmployerDashboard() {
     } catch (err) {
       addToast("Failed to load logbook telemetry.", "error");
       setDualTelemetryModal({ show: false, data: null, loading: false });
+    }
+  };
+
+  const handleSaveSupervisorLog = async (e) => {
+    e.preventDefault();
+    if (!logModal.student || !logModal.remarks.trim()) {
+      addToast("Please enter log remarks / feedback for the student.", "error");
+      return;
+    }
+    try {
+      setLogModal(prev => ({ ...prev, saving: true }));
+      const res = await apiClient.post("/intern/supervisor/log-record", {
+        studentId: logModal.student._id || logModal.student.id,
+        supervisorId: user.id || user._id,
+        title: logModal.title,
+        remarks: logModal.remarks,
+        performanceRating: Number(logModal.performanceRating),
+        status: logModal.status
+      });
+
+      if (res.data?.ok) {
+        addToast("✍️ Supervisor log record successfully saved for student!", "success");
+        const currentStudent = logModal.student;
+        setLogModal({ show: false, student: null, title: "Daily Internship Log & Performance Record", remarks: "", performanceRating: 5, status: "EXCELLENT", saving: false });
+        if (dualTelemetryModal.show && dualTelemetryModal.data?.student?._id === (currentStudent._id || currentStudent.id)) {
+          handleViewDualTelemetry(currentStudent._id || currentStudent.id);
+        }
+      } else {
+        addToast(res.data?.message || "Failed to save log record", "error");
+      }
+    } catch (err) {
+      addToast("Error saving supervisor log record: " + (err.response?.data?.message || err.message), "error");
+    } finally {
+      setLogModal(prev => ({ ...prev, saving: false }));
     }
   };
 
@@ -430,6 +465,13 @@ export default function EmployerDashboard() {
                       📖 View Daily Logbook & AI Verdict
                     </button>
                     <button
+                      onClick={() => setLogModal({ show: true, student: st, title: "Daily Internship Log & Performance Record", remarks: "", performanceRating: 5, status: "EXCELLENT", saving: false })}
+                      style={{ ...theme.button("secondary"), background: "rgba(99, 102, 241, 0.18)", color: "#a5b4fc", border: "1px solid rgba(99, 102, 241, 0.4)", fontSize: "12px", padding: "8px" }}
+                      className="button-hover"
+                    >
+                      ✍️ Write Log Record / Remarks
+                    </button>
+                    <button
                       onClick={() => openCandidateModal(st)}
                       style={{ ...theme.button("secondary"), fontSize: "11px", padding: "6px" }}
                       className="button-hover"
@@ -760,11 +802,11 @@ export default function EmployerDashboard() {
                 </h4>
 
                 {dualTelemetryModal.data.diaryEntries?.length === 0 ? (
-                  <div style={{ padding: "14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)" }}>
+                  <div style={{ padding: "14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "20px" }}>
                     ℹ️ Student has not submitted daily diary logs yet. Automated Outlook reminders are sent daily.
                   </div>
                 ) : (
-                  <div style={{ maxHeight: "250px", overflowY: "auto", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div style={{ maxHeight: "220px", overflowY: "auto", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", marginBottom: "20px" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
                       <thead>
                         <tr style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-secondary)" }}>
@@ -791,8 +833,163 @@ export default function EmployerDashboard() {
                     </table>
                   </div>
                 )}
+
+                {/* ✍️ SUPERVISOR LOG RECORDS & EVALUATIONS */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <h4 style={{ margin: 0, color: "var(--accent)", fontSize: "14px" }}>
+                    ✍️ Official Supervisor Log Records & Remarks ({dualTelemetryModal.data.supervisorLogs?.length || 0})
+                  </h4>
+                  <button
+                    onClick={() => setLogModal({ show: true, student: dualTelemetryModal.data.student, title: "Daily Internship Log & Performance Record", remarks: "", performanceRating: 5, status: "EXCELLENT", saving: false })}
+                    style={{ ...theme.button("primary"), fontSize: "11px", padding: "6px 12px", background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
+                    className="button-hover"
+                  >
+                    ✍️ + Write New Log Record
+                  </button>
+                </div>
+
+                {(!dualTelemetryModal.data.supervisorLogs || dualTelemetryModal.data.supervisorLogs.length === 0) ? (
+                  <div style={{ padding: "14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)" }}>
+                    No supervisor evaluation log records written for this student yet. Click "+ Write New Log Record" above to record remarks.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "200px", overflowY: "auto" }}>
+                    {dualTelemetryModal.data.supervisorLogs.map((log) => (
+                      <div key={log._id} style={{ padding: "12px", background: "rgba(99, 102, 241, 0.08)", border: "1px solid rgba(99, 102, 241, 0.25)", borderRadius: "8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <span style={{ fontWeight: "bold", fontSize: "13px", color: "var(--text-primary)" }}>{log.title}</span>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <span style={{ fontSize: "12px", color: "#f59e0b" }}>{"⭐".repeat(log.performanceRating || 5)}</span>
+                            <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", fontWeight: "bold", background: log.status === "EXCELLENT" ? "rgba(16, 185, 129, 0.2)" : log.status === "NEEDS_IMPROVEMENT" ? "rgba(239, 68, 68, 0.2)" : "rgba(245, 158, 11, 0.2)", color: log.status === "EXCELLENT" ? "#10b981" : log.status === "NEEDS_IMPROVEMENT" ? "#ef4444" : "#f59e0b" }}>
+                              {log.status}
+                            </span>
+                            <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{log.logDate}</span>
+                          </div>
+                        </div>
+                        <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                          {log.remarks}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* ✍️ SUPERVISOR WRITE LOG RECORD MODAL */}
+      {logModal.show && logModal.student && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(10px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 60000, padding: "20px"
+        }}>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--accent)",
+            borderRadius: "18px", width: "100%", maxWidth: "560px",
+            padding: "26px", boxShadow: "0 20px 60px rgba(0,0,0,0.7)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, color: "var(--accent)", fontSize: "18px", display: "flex", alignItems: "center", gap: "8px" }}>
+                ✍️ Write Supervisor Student Log Record
+              </h3>
+              <button
+                onClick={() => setLogModal({ show: false, student: null, title: "Daily Internship Log & Performance Record", remarks: "", performanceRating: 5, status: "EXCELLENT", saving: false })}
+                style={{ background: "transparent", border: "none", color: "var(--text-secondary)", fontSize: "22px", cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "16px", padding: "10px 14px", background: "var(--card-item-bg)", borderRadius: "8px", border: "1px solid var(--card-item-border)" }}>
+              <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>Student:</span>
+              <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>{logModal.student.name}</strong>
+              <span style={{ fontSize: "12px", color: "var(--text-secondary)", marginLeft: "10px" }}>({logModal.student.email})</span>
+            </div>
+
+            <form onSubmit={handleSaveSupervisorLog} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "var(--text-primary)", marginBottom: "4px" }}>
+                  Log Record Title:
+                </label>
+                <input
+                  type="text"
+                  value={logModal.title}
+                  onChange={(e) => setLogModal({ ...logModal, title: e.target.value })}
+                  style={styles.input}
+                  placeholder="e.g. Daily Internship Log & Performance Record"
+                  required
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "var(--text-primary)", marginBottom: "4px" }}>
+                    Performance Rating:
+                  </label>
+                  <select
+                    value={logModal.performanceRating}
+                    onChange={(e) => setLogModal({ ...logModal, performanceRating: Number(e.target.value) })}
+                    style={styles.input}
+                  >
+                    <option value={5}>⭐⭐⭐⭐⭐ (5/5 - Outstanding)</option>
+                    <option value={4}>⭐⭐⭐⭐ (4/5 - Very Good)</option>
+                    <option value={3}>⭐⭐⭐ (3/5 - Satisfactory)</option>
+                    <option value={2}>⭐⭐ (2/5 - Needs Improvement)</option>
+                    <option value={1}>⭐ (1/5 - Unsatisfactory)</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "var(--text-primary)", marginBottom: "4px" }}>
+                    Status Verdict:
+                  </label>
+                  <select
+                    value={logModal.status}
+                    onChange={(e) => setLogModal({ ...logModal, status: e.target.value })}
+                    style={styles.input}
+                  >
+                    <option value="EXCELLENT">EXCELLENT</option>
+                    <option value="SATISFACTORY">SATISFACTORY</option>
+                    <option value="NEEDS_IMPROVEMENT">NEEDS IMPROVEMENT</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "var(--text-primary)", marginBottom: "4px" }}>
+                  Supervisor Remarks & Detailed Performance Log:
+                </label>
+                <textarea
+                  value={logModal.remarks}
+                  onChange={(e) => setLogModal({ ...logModal, remarks: e.target.value })}
+                  style={{ ...styles.input, height: "100px", resize: "none" }}
+                  placeholder="Enter detailed supervisor evaluation remarks, task quality, technical progress, and daily log comments..."
+                  required
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setLogModal({ show: false, student: null, title: "Daily Internship Log & Performance Record", remarks: "", performanceRating: 5, status: "EXCELLENT", saving: false })}
+                  style={{ ...theme.button("secondary"), padding: "8px 16px", fontSize: "12px" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={logModal.saving}
+                  style={{ ...theme.button("primary"), background: "linear-gradient(135deg, #6366f1, #4f46e5)", padding: "8px 18px", fontSize: "12px" }}
+                  className="button-hover"
+                >
+                  {logModal.saving ? "Saving Log..." : "💾 Save Supervisor Log Record"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

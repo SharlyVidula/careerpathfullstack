@@ -53,6 +53,19 @@ export default function GrowthTracker() {
   const [history, setHistory] = useState([]);
   const [streak, setStreak] = useState(0);
 
+  // 🐙 Live GitHub Git Pushes Telemetry State
+  const [gitTelemetry, setGitTelemetry] = useState({
+    loading: false,
+    connected: false,
+    githubUsername: "",
+    gitPushesCount: 0,
+    totalCommitCount: 0,
+    gitPushScore: 0,
+    recentPushes: [],
+    lastPushDate: null,
+    trackingStart: null
+  });
+
   // Load user from localStorage
   useEffect(() => {
     const data = localStorage.getItem("user");
@@ -93,6 +106,8 @@ export default function GrowthTracker() {
 
         if (histRes.data?.ok) setHistory(histRes.data.history || []);
         if (streakRes.data?.ok) setStreak(streakRes.data.streak || 0);
+
+        fetchGitPushesTelemetry();
       } catch (e) {
         setError(e?.response?.data?.message || e.message);
       } finally {
@@ -102,6 +117,41 @@ export default function GrowthTracker() {
 
     run();
   }, [userId]);
+
+  const fetchGitPushesTelemetry = async () => {
+    if (!userId) return;
+    try {
+      setGitTelemetry(prev => ({ ...prev, loading: true }));
+      const res = await apiClient.get(`/github/git-pushes?userId=${userId}`);
+      if (res.data?.ok) {
+        setGitTelemetry({
+          loading: false,
+          connected: Boolean(res.data.connected),
+          githubUsername: res.data.githubUsername || "",
+          gitPushesCount: res.data.gitPushesCount || 0,
+          totalCommitCount: res.data.totalCommitCount || 0,
+          gitPushScore: res.data.gitPushScore || 0,
+          recentPushes: res.data.recentPushes || [],
+          lastPushDate: res.data.lastPushDate || null,
+          trackingStart: res.data.trackingStart || null
+        });
+
+        if (res.data.gitPushScore > 0) {
+          setState(prev => ({
+            ...prev,
+            progress: {
+              ...prev.progress,
+              skills: Math.max(prev.progress.skills || 0, res.data.gitPushScore)
+            }
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching git pushes telemetry:", err);
+    } finally {
+      setGitTelemetry(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   const refreshHistoryAndStreak = async () => {
     if (!userId) return;
@@ -344,6 +394,88 @@ export default function GrowthTracker() {
         }}
       />
 
+      {/* 🐙 LIVE GITHUB GIT PUSHES TELEMETRY & COMMIT RADAR - SPANS 4 COLUMNS */}
+      <BentoCard colSpan={4} disableTilt={true}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <h3 style={{ ...styles.h2, color: "#34d399", margin: 0, fontSize: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+              🐙 Live GitHub Git Pushes (Since Account Link / Login)
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
+              Monitored in real-time strictly from the point your account was linked to the system ({gitTelemetry.trackingStart ? formatDateTime(gitTelemetry.trackingStart) : "System Login"}).
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {gitTelemetry.connected ? (
+              <span style={{ fontSize: "12px", fontWeight: "bold", padding: "6px 14px", background: "rgba(16, 185, 129, 0.15)", color: "#10b981", borderRadius: "8px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+                ✓ Connected: @{gitTelemetry.githubUsername}
+              </span>
+            ) : (
+              <span style={{ fontSize: "12px", fontWeight: "bold", padding: "6px 14px", background: "rgba(239, 68, 68, 0.15)", color: "#f87171", borderRadius: "8px", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+                ⚠️ GitHub Account Unlinked
+              </span>
+            )}
+            <button
+              onClick={async () => {
+                await fetchGitPushesTelemetry();
+                addToast(gitTelemetry.connected ? `🎉 Synchronized Git Pushes from @${gitTelemetry.githubUsername}! Donut chart updated.` : "Please connect your GitHub account in Student Dashboard first.", gitTelemetry.connected ? "success" : "warning");
+              }}
+              disabled={gitTelemetry.loading}
+              style={{ ...theme.button("primary"), background: "linear-gradient(135deg, #10b981, #059669)", padding: "8px 16px", fontSize: "12px" }}
+              className="button-hover"
+            >
+              {gitTelemetry.loading ? "⌛ Fetching GitHub Events..." : "🔄 Sync Live Git Pushes"}
+            </button>
+          </div>
+        </div>
+
+        {/* Telemetry Stat Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "16px" }}>
+          <div style={{ padding: "14px", background: "var(--card-item-bg)", borderRadius: "10px", border: "1px solid var(--card-item-border)" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>Git Pushes (Since Logged In)</span>
+            <strong style={{ fontSize: "22px", color: "#34d399" }}>{gitTelemetry.gitPushesCount} Pushes</strong>
+          </div>
+          <div style={{ padding: "14px", background: "var(--card-item-bg)", borderRadius: "10px", border: "1px solid var(--card-item-border)" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>Pushed Commits (Post-Login)</span>
+            <strong style={{ fontSize: "22px", color: "var(--accent)" }}>{gitTelemetry.totalCommitCount} Commits</strong>
+          </div>
+          <div style={{ padding: "14px", background: "var(--card-item-bg)", borderRadius: "10px", border: "1px solid var(--card-item-border)" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>Git Donut Weight Score</span>
+            <strong style={{ fontSize: "22px", color: "#f59e0b" }}>{Math.max(state.progress.skills || 0, gitTelemetry.gitPushScore)}% Index</strong>
+          </div>
+          <div style={{ padding: "14px", background: "var(--card-item-bg)", borderRadius: "10px", border: "1px solid var(--card-item-border)" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>Tracking Active Since</span>
+            <strong style={{ fontSize: "13px", color: "var(--text-primary)", display: "block", marginTop: "6px" }}>
+              {gitTelemetry.trackingStart ? formatDateTime(gitTelemetry.trackingStart) : "Account Connection"}
+            </strong>
+          </div>
+        </div>
+
+        {/* Recent Pushes Activity Feed */}
+        {gitTelemetry.recentPushes && gitTelemetry.recentPushes.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: "bold" }}>⚡ Live Git Push Activity Feed (Post-Login):</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "10px" }}>
+              {gitTelemetry.recentPushes.map((p, idx) => (
+                <div key={idx} style={{ padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)", fontSize: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <span style={{ fontWeight: "bold", color: "#34d399" }}>📦 {p.repoName}</span>
+                    <span style={{ fontSize: "10px", color: "var(--text-secondary)", background: "rgba(255,255,255,0.08)", padding: "2px 6px", borderRadius: "4px" }}>🌿 {p.branch}</span>
+                  </div>
+                  <div style={{ color: "var(--text-primary)", marginBottom: "4px" }}>💬 "{p.commitMessage}"</div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: "11px" }}>{formatDateTime(p.pushedAt)} • {p.commitCount} commit{p.commitCount === 1 ? '' : 's'}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: "12px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)" }}>
+            ℹ️ {gitTelemetry.connected ? `Connected as @${gitTelemetry.githubUsername}. Monitoring live git pushes performed since ${gitTelemetry.trackingStart ? formatDateTime(gitTelemetry.trackingStart) : "connecting your account"}. Perform a git push on GitHub to see live updates on your Donut Chart!` : "Connect your GitHub account on the Student Dashboard to view your git pushes live."}
+          </div>
+        )}
+      </BentoCard>
+
       {/* LEFT: PROGRESS */}
       <BentoCard colSpan={2} style={{ justifyContent: "flex-start", gap: "20px" }}>
         <h2 style={styles.h2}>Progress</h2>
@@ -399,7 +531,7 @@ export default function GrowthTracker() {
                 style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
               />
               
-              {/* Track 3: Skills (Green) - Radius 86 */}
+              {/* Track 3: Skills & Git Telemetry (Green) - Radius 86 - Dynamic for Git Pushes! */}
               <circle cx="150" cy="150" r="86" fill="none" stroke="rgba(34, 197, 94, 0.06)" strokeWidth="6" />
               <circle 
                 cx="150" 
@@ -410,7 +542,7 @@ export default function GrowthTracker() {
                 strokeWidth="6" 
                 strokeLinecap="round"
                 strokeDasharray="540" 
-                strokeDashoffset={540 - (540 * (state.progress.skills || 0)) / 100} 
+                strokeDashoffset={540 - (540 * Math.max(state.progress.skills || 0, gitTelemetry.gitPushScore || 0)) / 100} 
                 filter="url(#radar-glow)"
                 style={{ transition: "stroke-dashoffset 1s ease-in-out", transform: "rotate(-90deg)", transformOrigin: "150px 150px" }} 
               />
@@ -462,7 +594,13 @@ export default function GrowthTracker() {
             <div style={styles.radarInfo}>
               <span style={styles.radarLabel}>OVERALL</span>
               <span style={styles.radarVal}>{Math.round(total / 5)}%</span>
-              <span style={styles.radarStatus}>ACTIVE</span>
+              {gitTelemetry.connected ? (
+                <span style={{ fontSize: "10px", color: "#34d399", fontWeight: "bold", background: "rgba(16, 185, 129, 0.18)", padding: "2px 6px", borderRadius: "10px", border: "1px solid rgba(16, 185, 129, 0.3)", marginTop: "2px" }}>
+                  🐙 @{gitTelemetry.githubUsername} ({gitTelemetry.gitPushesCount} Pushes)
+                </span>
+              ) : (
+                <span style={styles.radarStatus}>ACTIVE</span>
+              )}
             </div>
           </div>
 
@@ -482,9 +620,11 @@ export default function GrowthTracker() {
                   <div style={styles.trackerHeader}>
                     <span style={{ ...styles.trackerName, display: "flex", alignItems: "center", gap: "8px" }}>
                       <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
-                      {`> SYS.${k.toUpperCase()}`}
+                      {k === "skills" ? `> SYS.SKILLS & GIT PUSHES` : `> SYS.${k.toUpperCase()}`}
                     </span>
-                    <span style={{ ...styles.trackerPct, color }}>{v}%</span>
+                    <span style={{ ...styles.trackerPct, color }}>
+                      {k === "skills" ? Math.max(v || 0, gitTelemetry.gitPushScore || 0) : v}%
+                    </span>
                   </div>
                   <div style={styles.ledBar}>
                     {Array.from({ length: 10 }).map((_, idx) => {

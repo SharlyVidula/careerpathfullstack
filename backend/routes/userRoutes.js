@@ -122,6 +122,9 @@ router.post("/login", async (req, res) => {
       }
     }
 
+    user.lastLoginAt = new Date();
+    await user.save();
+
     res.json({ 
       ok: true,
       message: "Login success", 
@@ -612,8 +615,13 @@ router.post("/ai-background-check", async (req, res) => {
 // 2. REQUEST CONNECTION
 router.post("/request-connection", async (req, res) => {
   try {
-    const { employerId, employeeId } = req.body;
-    const existing = await Request.findOne({ employerId, employeeId });
+    const { employerId, employeeId, studentId } = req.body;
+    const targetStudentId = employeeId || studentId;
+    if (!targetStudentId) {
+      return res.status(400).json({ message: "Student ID is required." });
+    }
+
+    const existing = await Request.findOne({ employerId, employeeId: targetStudentId });
     if (existing) return res.status(400).json({ message: "Request pending or already submitted" });
     
     // Check requester role
@@ -624,7 +632,7 @@ router.post("/request-connection", async (req, res) => {
 
     await Request.create({ 
       employerId, 
-      employeeId, 
+      employeeId: targetStudentId, 
       status, 
       requestedByRole 
     });
